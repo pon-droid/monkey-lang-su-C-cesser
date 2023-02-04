@@ -47,13 +47,13 @@ new_token (enum token_type ttype, char *input)
   struct token *t = malloc(sizeof(struct token));
   
   if (!t)
-    printf("Couldn't allocate memory for token %s", input);
+    printf("Couldn't allocate memory for token %s\n", input);
   
   t->type = ttype;
   t->literal = malloc((sizeof (*input) / sizeof (input[0])) * sizeof (char));
 
-  if(!t->literal)
-    printf("Couldn't allocate memory for token %s", input);
+  if (!t->literal)
+    printf("Couldn't allocate memory for token %s\n", input);
   
   strcpy(t->literal, input);
   t->literal[sizeof(*input) / sizeof(input[0])] = '\0';
@@ -85,9 +85,26 @@ get_lexer (const char *input)
     };
 }
 
+int
+is_abc(const char *ch)
+{
+  return ('a' <= *ch && *ch <= 'z') || ( 'A' <= *ch && *ch <= 'Z') || (*ch == '_');
+}
+
+int
+is_123(const char *ch)
+{
+  return ('0' <= *ch && *ch <= '9');
+}
+
 void
 set_ident (struct token *t)
 {
+  if (is_123(t->literal))
+    {
+      t->type = INT;
+      return;
+    }
   // TODO: Get us a hashtable up in here
   if (!strcmp(t->literal, "let"))
     {
@@ -104,48 +121,21 @@ set_ident (struct token *t)
 }
 
 struct token *
-bad_token (char *ch)
-{
-    struct token *t = malloc(sizeof(struct token));
-  
-    if (!t)
-      printf("Couldn't allocate memory for bad token\n");
-
-    t->type = ILLEGAL;
-    char *string = malloc(sizeof(char) * 2);
-    t->literal = strcat(string, ch);
-    return t;
-}
-
-int
-is_abc(const char *ch)
-{
-  return ('a' <= *ch && *ch <= 'z') || ( 'A' <= *ch && *ch <= 'Z') || (*ch == '_');
-}
-
-int
-is_123(const char *ch)
-{
-  return '0' <= *ch && *ch <= '9';
-}
-
-struct token *
-get_ident (struct lexer *l)
+get_ident (struct lexer *l, int (*check)(const char *))
 {
   int i, j;
-  for (i = (l->pos - 1), j = 0; is_abc(&l->input[i]); i++, j++);
+  for (i = (l->pos - 1), j = 0; (*check)(&l->input[i]); i++, j++);
 
   struct token *t = malloc(sizeof(struct token));
 
-  
-  if(!t)
-    printf("Couldn't allocate memory for identifier token!\n");
+  if (!t)
+    printf("Couldn't allocate memory for USERDEF token!\n");
   
   t->literal = malloc(j * sizeof(char));
 
 
-  if(!t->literal)
-    printf("Couldn't allocate memory for identifier token literal!\n");
+  if (!t->literal)
+    printf("Couldn't allocate memory for USERDEF token literal!\n");
   
   strncpy(t->literal, l->input + l->pos - 1, j);
   
@@ -174,11 +164,12 @@ next_tok (struct lexer *l)
     case '+': t = new_token(PLUS, &ch); break;
     case '{': t = new_token(LBRACE, &ch); break;
     case '}': t = new_token(RBRACE, &ch); break;
+    case 0:   t = new_token(EOF, &ch); break;
     default:
       if (is_abc(&ch))
-	t = get_ident(l);
+	t = get_ident(l, &is_abc);
       else if (is_123(&ch))
-	t = new_token(INT, &ch);
+	t = get_ident(l, &is_123);
       else
 	t = new_token(ILLEGAL, &ch);
     }

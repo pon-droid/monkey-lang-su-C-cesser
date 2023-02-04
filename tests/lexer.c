@@ -80,7 +80,6 @@ main(void)
   for(int i = 0; i < (sizeof(tests) / sizeof(tests[0])); i++)
     {
       struct token *t = next_tok(&l);
-      printf("%s||%d\n", t->literal, t->type);
       assert(!strcmp(t->literal, tests[i].ch));
       assert(t->type == tests[i].type);
       free_token(t);
