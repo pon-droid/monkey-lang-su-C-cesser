@@ -41,7 +41,7 @@ struct token
   char *literal;
 };
 
-struct token *
+static struct token *
 new_token (enum token_type ttype, char *input)
 {
   struct token *t = malloc(sizeof(struct token));
@@ -50,13 +50,15 @@ new_token (enum token_type ttype, char *input)
     printf("Couldn't allocate memory for token %s\n", input);
   
   t->type = ttype;
-  t->literal = malloc((sizeof (*input) / sizeof (input[0])) * sizeof (char));
+  //  t->literal = malloc((sizeof (*input) / sizeof (input[0])) * sizeof (char));
+  t->literal = input;
 
   if (!t->literal)
     printf("Couldn't allocate memory for token %s\n", input);
   
-  strcpy(t->literal, input);
-  t->literal[sizeof(*input) / sizeof(input[0])] = '\0';
+  //strcpy(t->literal, input);
+  //t->literal[sizeof(*input) / sizeof(input[0])] = '\0';
+  
   return t;
 }
 
@@ -85,19 +87,19 @@ get_lexer (const char *input)
     };
 }
 
-int
+static int
 is_abc(const char *ch)
 {
   return ('a' <= *ch && *ch <= 'z') || ( 'A' <= *ch && *ch <= 'Z') || (*ch == '_');
 }
 
-int
+static int
 is_123(const char *ch)
 {
   return ('0' <= *ch && *ch <= '9');
 }
 
-void
+static void
 set_ident (struct token *t)
 {
   if (is_123(t->literal))
@@ -116,11 +118,35 @@ set_ident (struct token *t)
       t->type = FUNCTION;
       return;
     }
-
+  if (!strcmp(t->literal, "true"))
+    {
+      t->type = TRUE;
+      return;
+    }
+  if (!strcmp(t->literal, "false"))
+    {
+      t->type = FALSE;
+      return;
+    }
+  if (!strcmp(t->literal, "if"))
+    {
+      t->type = IF;
+      return;
+    }
+  if (!strcmp(t->literal, "else"))
+    {
+      t->type = ELSE;
+      return;
+    }
+  if (!strcmp(t->literal, "return"))
+    {
+      t->type = RETURN;
+      return;
+    }    
   t->type = IDENT;
 }
 
-struct token *
+static struct token *
 get_ident (struct lexer *l, int (*check)(const char *))
 {
   int i, j;
@@ -156,15 +182,38 @@ next_tok (struct lexer *l)
   
   switch (ch)
     {
-    case '=': t = new_token(ASSIGN, &ch); break;
-    case ';': t = new_token(SEMICOLON, &ch); break;
-    case '(': t = new_token(LPAREN, &ch); break;
-    case ')': t = new_token(RPAREN, &ch); break;
-    case ',': t = new_token(COMMA, &ch); break;
-    case '+': t = new_token(PLUS, &ch); break;
-    case '{': t = new_token(LBRACE, &ch); break;
-    case '}': t = new_token(RBRACE, &ch); break;
-    case 0:   t = new_token(EOF, &ch); break;
+      //    case '=': t = new_token(ASSIGN, &ch); break;
+    case '=': 
+      if (l->input[l->pos] == '=')
+	{
+	  t = new_token(EQ, strdup("=="));
+	  l->pos++;
+	}
+      else
+	t = new_token(ASSIGN, strdup("="));
+      break;
+    case ';': t = new_token(SEMICOLON, strdup(";")); break;
+    case '(': t = new_token(LPAREN, strdup("(")); break;
+    case ')': t = new_token(RPAREN, strdup(")")); break;
+    case ',': t = new_token(COMMA, strdup(",")); break;
+    case '+': t = new_token(PLUS, strdup("+")); break;
+    case '{': t = new_token(LBRACE, strdup("{")); break;
+    case '}': t = new_token(RBRACE, strdup("}")); break;
+    case '-': t = new_token(MINUS, strdup("-")); break;
+    case '!':
+      if (l->input[l->pos] == '=')
+	{
+	  t = new_token(NOT_EQ, strdup("!="));
+	  l->pos++;
+	}
+      else
+	t = new_token(BANG, strdup("!"));
+      break;
+    case '/': t = new_token(SLASH, strdup("/")); break;
+    case '*': t = new_token(ASTERISK, strdup("*")); break;
+    case '<': t = new_token(LT, strdup("<")); break;
+    case '>': t = new_token(GT, strdup(">")); break;
+    case 0:   t = new_token(EOF, strdup("")); break;
     default:
       if (is_abc(&ch))
 	t = get_ident(l, &is_abc);
