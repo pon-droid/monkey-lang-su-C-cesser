@@ -157,7 +157,7 @@ main(void)
     "\n"
     "let result = add(five, ten);";
   */
-  const char* input =
+  const char *input =
     "let five = 5;\n"
     "let ten = 10;\n"
     "let add = fn(x, y) {\n"

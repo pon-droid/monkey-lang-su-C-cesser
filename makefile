@@ -8,8 +8,11 @@ PKGS=sdl2 SDL2_image
 
 CFLAGS=-Wall -Wextra -pedantic
 
+tests: lexer_test parser_test
 
 all: $(FILES) 
 	$(CC) $(CFLAGS) -o $(NAME) $(FILES) 
 lexer_test: tests/lexer.c 
-	$(CC) $(CFLAGS) -o lexer_test -g tests/lexer.c
+	$(CC) $(CFLAGS) -o bin/tests/lexer_test tests/lexer.c
+parser_test: tests/parser.c
+	$(CC) $(CFLAGS) -o bin/tests/parser_test tests/parser.c

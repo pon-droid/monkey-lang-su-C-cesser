@@ -42,22 +42,20 @@ struct token
 };
 
 static struct token *
-new_token (enum token_type ttype, char *input)
+new_token (enum token_type type, char *input)
 {
   struct token *t = malloc(sizeof(struct token));
   
   if (!t)
     printf("Couldn't allocate memory for token %s\n", input);
   
-  t->type = ttype;
-  //  t->literal = malloc((sizeof (*input) / sizeof (input[0])) * sizeof (char));
+  t->type = type;
+
   t->literal = input;
 
   if (!t->literal)
     printf("Couldn't allocate memory for token %s\n", input);
-  
-  //strcpy(t->literal, input);
-  //t->literal[sizeof(*input) / sizeof(input[0])] = '\0';
+
   
   return t;
 }
@@ -72,7 +70,6 @@ free_token (struct token *t)
 struct lexer
 {
   const char *input;
-  int read_pos;
   int pos;
 };
 
@@ -82,7 +79,6 @@ get_lexer (const char *input)
   return (struct lexer)
     {
       .input = input,
-      .read_pos = 1,
       .pos = 0,
     };
 }
