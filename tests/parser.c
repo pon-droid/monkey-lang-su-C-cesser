@@ -1,6 +1,8 @@
+#define MEM_DEBUG (1)
 #include "../lexer.h"
 #include "../parser.h"
 #include <assert.h>
+
 
 int
 main (void)
@@ -23,9 +25,15 @@ main (void)
   for (int i = 0; i < 3; i++)
     {
       struct stmt *s = get_stmt(&p);
+      //printf("%s and %s\n", s->ident.literal, tests[i]);
+      //printf("%d\n", MEM_COUNT);
       assert(s != NULL);
+
       assert(!strcmp(s->ident.literal, tests[i]));
+      free_stmt(s);
     }
-  
+   free_parser(&p);
+   printf("%d\n", MEM_COUNT);
+   assert(MEM_COUNT == 0);
   return 0;
 }

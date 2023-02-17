@@ -4,6 +4,10 @@
 #include <string.h>
 #include <stdlib.h>
 
+#ifdef MEM_DEBUG
+int MEM_COUNT = 0;
+#endif
+
 enum token_type
 {
   ILLEGAL,
@@ -45,7 +49,9 @@ static struct token *
 new_token (enum token_type type, char *input)
 {
   struct token *t = malloc(sizeof(struct token));
-  
+  #ifdef MEM_DEBUG
+  MEM_COUNT++;
+  #endif
   if (!t)
     printf("Couldn't allocate memory for token %s\n", input);
   
@@ -61,8 +67,18 @@ new_token (enum token_type type, char *input)
 }
 
 void
+cpy_token (struct token *dest, struct token *src)
+{
+  dest->type = src->type;
+  dest->literal = strdup(src->literal);
+}
+
+void
 free_token (struct token *t)
 {
+  #ifdef MEM_DEBUG
+  MEM_COUNT--;
+  #endif
   free(t->literal);
   free(t);
 }
@@ -147,20 +163,21 @@ get_ident (struct lexer *l, int (*check)(const char *))
 {
   int i, j;
   for (i = (l->pos - 1), j = 0; (*check)(&l->input[i]); i++, j++);
-
+  #ifdef MEM_DEBUG
+  MEM_COUNT++;
+  #endif
   struct token *t = malloc(sizeof(struct token));
 
   if (!t)
     printf("Couldn't allocate memory for USERDEF token!\n");
   
-  t->literal = malloc(j * sizeof(char));
+  t->literal = malloc(j * sizeof(char) + 1);
 
 
   if (!t->literal)
     printf("Couldn't allocate memory for USERDEF token literal!\n");
   
   strncpy(t->literal, l->input + l->pos - 1, j);
-  
   t->literal[j] = '\0';
   l->pos = i;
   set_ident(t);

@@ -179,12 +179,10 @@ main(void)
   for(int i = 0; i < (sizeof(tests) / sizeof(tests[0])); i++)
     {
       struct token *t = next_tok(&l);
-      //printf("tok: %s test: %s\n", t->literal, tests[i].ch);
       assert(!strcmp(t->literal, tests[i].ch));
       assert(t->type == tests[i].type);
       free_token(t);
     }
-
 
   return 0;
 }

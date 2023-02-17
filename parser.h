@@ -39,6 +39,9 @@ struct parser
 struct parser
 get_parser (struct lexer *l)
 {
+  #ifdef MEM_DEBUG
+  MEM_COUNT++;
+  #endif
   return (struct parser)
     {
       .l = l,
@@ -48,12 +51,12 @@ get_parser (struct lexer *l)
 }
 
 void
-next_token (struct parser *p)
+cycle_token (struct parser *p)
 {
-  //TODO: Fix memory leak
-  //free_token(p->cur_tok);
+  if (p->cur_tok)
+    free_token(p->cur_tok);
+  
   p->cur_tok = p->peek_tok;
-  //free_token(p->peek_tok);
   p->peek_tok = next_tok(p->l);
 }
 
@@ -69,25 +72,30 @@ expect_peek (struct parser *p, enum token_type t)
 struct stmt *
 get_let_stmt (struct parser *p)
 {
+  #ifdef MEM_DEBUG
+  MEM_COUNT++;
+  #endif
+  
   struct stmt *s = malloc(sizeof(struct stmt));
-
+  s->expr = NULL; // Have not implemented this yet
+  
   if(!s)
     return NULL;
-  
-  s->token = *p->cur_tok;
 
+  cpy_token(&s->token, p->cur_tok);
+  
   if (!expect_peek(p, IDENT))
     return NULL;
   
-  next_token(p);
-  s->ident = *p->cur_tok;
+  cycle_token(p);
+  cpy_token(&s->ident, p->cur_tok);
 
   if (!expect_peek(p, ASSIGN))
     return NULL;
   
   //TODO: Skipping over expressions
-  for (;p->cur_tok->type != SEMICOLON; next_token(p));
-  next_token(p);
+  for (;p->cur_tok->type != SEMICOLON; cycle_token(p)){};
+  cycle_token(p);
 
   return s;
 }
@@ -97,10 +105,37 @@ get_stmt (struct parser *p)
 {
   switch (p->cur_tok->type)
     {
-    case LET:
-      return get_let_stmt(p);
-      break;
+    case LET: return get_let_stmt(p); break;
     default:
       return NULL;
     }
+}
+
+void
+free_stmt (struct stmt *s)
+{
+  if (s->expr)
+    free(s->expr);
+  
+  free(s->token.literal);
+  free(s->ident.literal);
+  free(s);
+  #ifdef MEM_DEBUG
+  MEM_COUNT--;
+  #endif
+}
+      
+
+void
+free_parser (struct parser *p)
+{
+  if (p->cur_tok)
+    free_token(p->cur_tok);
+
+  if (p->peek_tok)
+    free_token(p->peek_tok);
+
+  #ifdef MEM_DEBUG
+  MEM_COUNT--;
+  #endif
 }
