@@ -39,6 +39,37 @@ enum token_type
   NOT_EQ
 };
 
+char const *toktype_str[] =
+{
+  "ILLEGAL",
+  "IDENT",
+  "INT",
+  "ASSIGN",
+  "PLUS",
+  "MINUS",
+  "COMMA",
+  "SEMICOLON",
+  "LPAREN",
+  "RPAREN",
+  "LBRACE",
+  "RBRACE",
+  "FUNCTION",
+  "LET",
+  "END_FILE",
+  "SLASH",
+  "ASTERISK",
+  "BANG",
+  "LT",
+  "GT",
+  "TRUE",
+  "FALSE",
+  "IF",
+  "ELSE",
+  "RETURN",
+  "EQ",
+  "NOT_EQ"
+};
+
 struct token
 {
   enum token_type type;
@@ -226,7 +257,7 @@ next_tok (struct lexer *l)
     case '*': t = new_token(ASTERISK, strdup("*")); break;
     case '<': t = new_token(LT, strdup("<")); break;
     case '>': t = new_token(GT, strdup(">")); break;
-    case 0:   t = new_token(EOF, strdup("")); break;
+    case 0:   t = new_token(END_FILE, strdup("")); break;
     default:
       if (is_abc(&ch))
 	t = get_ident(l, &is_abc);
@@ -237,3 +268,4 @@ next_tok (struct lexer *l)
     }
   return t;
 }
+

@@ -13,6 +13,6 @@ tests: lexer_test parser_test
 all: $(FILES) 
 	$(CC) $(CFLAGS) -o $(NAME) $(FILES) 
 lexer_test: tests/lexer.c 
-	$(CC) $(CFLAGS) -o bin/tests/lexer_test tests/lexer.c
+	$(CC) $(CFLAGS) -o bin/tests/lexer_test -ggdb3 tests/lexer.c
 parser_test: tests/parser.c
-	$(CC) $(CFLAGS) -o bin/tests/parser_test tests/parser.c
+	$(CC) $(CFLAGS) -o bin/tests/parser_test -ggdb3 tests/parser.c

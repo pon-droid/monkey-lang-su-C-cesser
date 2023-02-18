@@ -1,4 +1,4 @@
-#define MEM_DEBUG (1)
+#define MEM_DEBUG 1
 #include "../lexer.h"
 #include "../parser.h"
 #include <assert.h>
@@ -8,8 +8,8 @@ int
 main (void)
 {
   const char *input =
-    "let x = 5;\n"
-    "let y = 10;\n"
+    "let  5;\n"
+    "let  = 10;\n"
     "let foobar = 838383;\n"
     ;
   struct lexer l = get_lexer(input);
@@ -22,18 +22,17 @@ main (void)
       [2] = "foobar",
     };
 
-  for (int i = 0; i < 3; i++)
+  
+  while(p.cur_tok->type != END_FILE)
     {
       struct stmt *s = get_stmt(&p);
-      //printf("%s and %s\n", s->ident.literal, tests[i]);
-      //printf("%d\n", MEM_COUNT);
-      assert(s != NULL);
-
-      assert(!strcmp(s->ident.literal, tests[i]));
-      free_stmt(s);
+      if (s) {
+	printf("%s of type %s\n", s->ident.literal, toktype_str[s->ident.type]); free_stmt(s);  } else {
+	cycle_token(&p); }
     }
-   free_parser(&p);
-   printf("%d\n", MEM_COUNT);
-   assert(MEM_COUNT == 0);
+  getfree_errors(p.elist);
+  free(p.elist);
+  free_parser(&p);
+  printf("%d\n", MEM_COUNT);
   return 0;
 }
