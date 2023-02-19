@@ -7,9 +7,9 @@
 
 enum token_type
 {
-  ILLEGAL,
   IDENT,
   INT,
+  ILLEGAL,
   ASSIGN,
   PLUS,
   MINUS,
@@ -38,9 +38,9 @@ enum token_type
 
 char const *toktype_str[] =
 {
-  "ILLEGAL",
   "IDENT",
   "INT",
+  "ILLEGAL",
   "ASSIGN",
   "PLUS",
   "MINUS",

@@ -5,19 +5,35 @@
 enum stmt_type
 {
   LET_STMT,
+  RET_STMT,
+  EXPR_STMT,
 };
 
 enum expr_type
 {
-    INT_EXPR,
+  INT_EXPR,
+  IDENT_EXPR,
+};
+
+enum op_prec
+{
+  LOWEST,
+  EQUALS,
+  LESSGREATER,
+  SUM,
+  PRODUCT,
+  PREFIX,
+  CALL,
 };
 
 struct expr
 {
   enum expr_type type;
+  struct token token;
   union
   {
     int integer;
+    char *ident;
   };
 };
 
@@ -43,6 +59,42 @@ struct parser
   struct enode *elist;
 };
 
+struct expr *
+parse_ident (const struct parser *p)
+{
+  struct expr *e = malloc(sizeof(struct expr));
+  e->type = IDENT_EXPR;
+  e->ident = strdup(p->cur_tok->literal);
+  cpy_token(&e->token, p->cur_tok);
+  return e;
+}
+
+struct expr *
+parse_int (const struct parser *p)
+{
+  struct expr *e = malloc(sizeof(struct expr));
+  e->type = INT_EXPR;
+  e->integer = atoi(p->cur_tok->literal);
+  cpy_token(&e->token, p->cur_tok);
+  return e;
+}
+
+struct expr * (*prefix_fns[])(const struct parser *p) =
+{
+  parse_ident,
+  parse_int
+};
+
+struct expr *
+parse_expr (const struct parser *p, enum op_prec prec)
+{
+  struct expr *(*prefix)(const struct parser *p) = prefix_fns[p->cur_tok->type];
+  if (!prefix)
+    return NULL;
+
+  return prefix(p);
+}
+  
 struct enode *
 get_node (enum token_type expt, enum token_type got)
 {
@@ -101,10 +153,20 @@ expect_peek (struct parser *p, enum token_type t)
 }
 
 void
+free_expr (struct expr *e)
+{
+  if (e->type == IDENT_EXPR)
+    free(e->ident);
+  if (e->token.literal)
+    free(e->token.literal);
+  free(e);
+}
+
+void
 free_stmt (struct stmt *s)
 {
   if (s->expr)
-    free(s->expr);
+    free_expr(s->expr);
   if (s->token.literal)
     free(s->token.literal);
   if (s->ident.literal)
@@ -118,7 +180,7 @@ get_let_stmt (struct parser *p)
 {
   struct stmt *s = malloc(sizeof(struct stmt));
   memset(s, 0, sizeof(struct stmt));
-  
+  s->type = LET_STMT;
   if(!s)
     return NULL;
 
@@ -152,8 +214,9 @@ get_ret_stmt (struct parser *p)
 {
   struct stmt *s = malloc(sizeof(struct stmt));
   memset(s, 0, sizeof(struct stmt));
+  s->type = RET_STMT;
 
-  if(!s)
+  if (!s)
     return NULL;
 
   cpy_token(&s->token, p->cur_tok);
@@ -165,6 +228,24 @@ get_ret_stmt (struct parser *p)
 }
 
 struct stmt *
+get_expr_stmt (struct parser *p)
+{
+  struct stmt *s = malloc(sizeof(struct stmt));
+  memset(s, 0, sizeof(struct stmt));
+  if (!s)
+    return NULL;
+  
+  s->type = EXPR_STMT;
+  cpy_token(&s->token, p->cur_tok);
+  s->expr = parse_expr(p, LOWEST);
+
+  if (expect_peek(p, SEMICOLON))
+    cycle_token(p);
+  
+  return s;
+}
+
+struct stmt *
 get_stmt (struct parser *p)
 {
   switch (p->cur_tok->type)
@@ -172,7 +253,7 @@ get_stmt (struct parser *p)
     case LET: return get_let_stmt(p); break;
     case RETURN: return get_ret_stmt(p); break;
     default:
-      return NULL;
+      return get_expr_stmt(p);
     }
 }
 

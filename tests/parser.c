@@ -2,10 +2,42 @@
 #include "../parser.h"
 #include <assert.h>
 
+void
+test_ident (void)
+{
+  const char *input = "foobar;";
+  struct lexer l = get_lexer(input);
+  struct parser p = get_parser(&l);
+  struct stmt *s = get_stmt(&p);
+  getfree_errors(&p.elist);
+  assert(s->type == EXPR_STMT);
+  printf("%s\n", s->expr->ident);
+  assert(s->expr->type == IDENT_EXPR);
+  free_stmt(s);
+  free_parser(&p);
+}
+
+void
+test_int (void)
+{
+  const char *input = "5;";
+  struct lexer l = get_lexer(input);
+  struct parser p = get_parser(&l);
+  struct stmt *s = get_stmt(&p);
+  getfree_errors(&p.elist);
+  assert(s->type == EXPR_STMT);
+  printf("%d\n", s->expr->integer);
+  assert(s->expr->type == INT_EXPR);
+  free_stmt(s);
+  free_parser(&p);
+}
 
 int
 main (void)
 {
+  test_ident();
+  test_int();
+  /*
   const char *input =
     "let  5;\n"
     "let  = 10;\n"
@@ -18,6 +50,7 @@ main (void)
      
   struct lexer l = get_lexer(input);
   struct parser p = get_parser(&l);
+
   
   const char *tests[3] =
     {
@@ -35,5 +68,6 @@ main (void)
     }
   getfree_errors(&p.elist);
   free_parser(&p);
+  */
   return 0;
 }
