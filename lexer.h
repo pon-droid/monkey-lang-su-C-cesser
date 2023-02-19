@@ -4,9 +4,6 @@
 #include <string.h>
 #include <stdlib.h>
 
-#ifdef MEM_DEBUG
-int MEM_COUNT = 0;
-#endif
 
 enum token_type
 {
@@ -80,9 +77,7 @@ static struct token *
 new_token (enum token_type type, char *input)
 {
   struct token *t = malloc(sizeof(struct token));
-  #ifdef MEM_DEBUG
-  MEM_COUNT++;
-  #endif
+
   if (!t)
     printf("Couldn't allocate memory for token %s\n", input);
   
@@ -107,9 +102,6 @@ cpy_token (struct token *dest, struct token *src)
 void
 free_token (struct token *t)
 {
-  #ifdef MEM_DEBUG
-  MEM_COUNT--;
-  #endif
   free(t->literal);
   free(t);
 }
@@ -194,9 +186,7 @@ get_ident (struct lexer *l, int (*check)(const char *))
 {
   int i, j;
   for (i = (l->pos - 1), j = 0; (*check)(&l->input[i]); i++, j++);
-  #ifdef MEM_DEBUG
-  MEM_COUNT++;
-  #endif
+
   struct token *t = malloc(sizeof(struct token));
 
   if (!t)
@@ -226,7 +216,6 @@ next_tok (struct lexer *l)
   
   switch (ch)
     {
-      //    case '=': t = new_token(ASSIGN, &ch); break;
     case '=': 
       if (l->input[l->pos] == '=')
 	{

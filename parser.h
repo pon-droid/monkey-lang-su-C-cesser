@@ -1,7 +1,6 @@
 #pragma once
 
 #include "lexer.h"
-#include <assert.h>
 
 enum stmt_type
 {
@@ -36,26 +35,17 @@ struct enode
   struct enode *node;
 };
 
-struct elist
-{
-  struct enode *head;
-};
-  
 struct parser
 {
   struct lexer *l;
   struct token *cur_tok;
   struct token *peek_tok;
-  //struct enode *elist;
-  struct elist *elist;
+  struct enode *elist;
 };
 
 struct enode *
 get_node (enum token_type expt, enum token_type got)
 {
-#ifdef MEM_DEBUG
-  MEM_COUNT++;
-#endif
   struct enode *e = malloc(sizeof(struct enode));
   if (!e)
     return NULL;
@@ -65,30 +55,15 @@ get_node (enum token_type expt, enum token_type got)
   return e;
 }
 
-struct elist *
-get_elist (void)
-{
-  struct elist *e = malloc(sizeof(struct elist));
-  if (!e)
-    return NULL;
-  
-  e->head = NULL;
-  return e;
-}
-
 struct parser
 get_parser (struct lexer *l)
 {
-  #ifdef MEM_DEBUG
-  MEM_COUNT++; 
-  #endif
-  
   return (struct parser)
     {
       .l = l,
       .cur_tok = next_tok(l),
       .peek_tok = next_tok(l),
-      .elist = get_elist(),
+      .elist = NULL,
     };
 }
 
@@ -103,14 +78,13 @@ cycle_token (struct parser *p)
 }
 
 void
-new_error (struct elist *elist, enum token_type expt, enum token_type got)
+new_error (struct enode **elist, enum token_type expt, enum token_type got)
 {
-  printf("new eror\n");
-  if (!elist->head)
-    elist->head = get_node(expt, got);
+  if (!*elist)
+    *elist = get_node(expt, got);
   else
     {
-      struct enode *cur = elist->head;
+      struct enode *cur = *elist;
       while (cur->node)
 	cur = cur->node;
       cur->node = get_node(expt, got);
@@ -122,7 +96,7 @@ expect_peek (struct parser *p, enum token_type t)
 {
   if (p->peek_tok->type == t)
     return 1;
-  new_error(p->elist, t, p->peek_tok->type);
+  new_error(&p->elist, t, p->peek_tok->type);
   return 0;
 }
 
@@ -131,20 +105,19 @@ free_stmt (struct stmt *s)
 {
   if (s->expr)
     free(s->expr);
+  if (s->token.literal)
+    free(s->token.literal);
+  if (s->ident.literal)
+    free(s->ident.literal);
   
-  free(s->token.literal);
-  free(s->ident.literal);
   free(s);
-  #ifdef MEM_DEBUG
-  MEM_COUNT--;
-  #endif
 }
 
 struct stmt *
 get_let_stmt (struct parser *p)
 {
   struct stmt *s = malloc(sizeof(struct stmt));
-  s->expr = NULL; // Have not implemented this yet
+  memset(s, 0, sizeof(struct stmt));
   
   if(!s)
     return NULL;
@@ -171,10 +144,6 @@ get_let_stmt (struct parser *p)
   for (;p->cur_tok->type != SEMICOLON; cycle_token(p));
   cycle_token(p);
 
-#ifdef MEM_DEBUG
-  MEM_COUNT++;
-#endif
-
   return s;
 }
 
@@ -197,27 +166,19 @@ free_parser (struct parser *p)
 
   if (p->peek_tok)
     free_token(p->peek_tok);
-  //free(p->elist);
-  #ifdef MEM_DEBUG
-  MEM_COUNT--;
-  #endif
 }
 
 void
-getfree_errors (struct elist *elist)
+getfree_errors (struct enode **elist)
 {
-  struct enode *cur = elist->head;
+  struct enode *cur = *elist;
   struct enode *node = cur;
   while (node)
     {
       node = cur->node;
       printf("parser error: expected token type %s got %s instead!\n", toktype_str[cur->expect_tok], toktype_str[cur->got_tok]);
       free(cur);
-#ifdef MEM_DEBUG
-      MEM_COUNT--;
-#endif
       cur = node;
     }
-  //  free(elist);
 }
   

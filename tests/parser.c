@@ -1,4 +1,3 @@
-#define MEM_DEBUG 1
 #include "../lexer.h"
 #include "../parser.h"
 #include <assert.h>
@@ -30,9 +29,7 @@ main (void)
 	printf("%s of type %s\n", s->ident.literal, toktype_str[s->ident.type]); free_stmt(s);  } else {
 	cycle_token(&p); }
     }
-  getfree_errors(p.elist);
-  free(p.elist);
+  getfree_errors(&p.elist);
   free_parser(&p);
-  printf("%d\n", MEM_COUNT);
   return 0;
 }
