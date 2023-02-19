@@ -148,11 +148,29 @@ get_let_stmt (struct parser *p)
 }
 
 struct stmt *
+get_ret_stmt (struct parser *p)
+{
+  struct stmt *s = malloc(sizeof(struct stmt));
+  memset(s, 0, sizeof(struct stmt));
+
+  if(!s)
+    return NULL;
+
+  cpy_token(&s->token, p->cur_tok);
+
+  //TODO: Skipping over expressions
+  for (;p->cur_tok->type != SEMICOLON; cycle_token(p));
+  cycle_token(p);
+  return s;
+}
+
+struct stmt *
 get_stmt (struct parser *p)
 {
   switch (p->cur_tok->type)
     {
     case LET: return get_let_stmt(p); break;
+    case RETURN: return get_ret_stmt(p); break;
     default:
       return NULL;
     }
