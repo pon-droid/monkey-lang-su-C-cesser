@@ -32,11 +32,29 @@ test_int (void)
   free_parser(&p);
 }
 
+void
+test_prefix (void)
+{
+  const char *input = "!foobar;";
+  struct lexer l = get_lexer(input);
+  struct parser p = get_parser(&l);
+  struct stmt *s = get_stmt(&p);
+  getfree_errors(&p.elist);
+  assert(s->type == EXPR_STMT);
+  printf("%s\n", s->expr->token.literal);
+  //  printf("%d\n", s->expr->expr->integer);
+  printf("%s\n", s->expr->expr->ident);
+  assert(s->expr->type == PREFIX_EXPR);
+  free_stmt(s);
+  free_parser(&p);
+}
+
 int
 main (void)
 {
   test_ident();
   test_int();
+  test_prefix();
   /*
   const char *input =
     "let  5;\n"

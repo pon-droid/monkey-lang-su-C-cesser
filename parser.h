@@ -13,6 +13,7 @@ enum expr_type
 {
   INT_EXPR,
   IDENT_EXPR,
+  PREFIX_EXPR,
 };
 
 enum op_prec
@@ -34,6 +35,7 @@ struct expr
   {
     int integer;
     char *ident;
+    struct expr *expr;
   };
 };
 
@@ -59,6 +61,26 @@ struct parser
   struct enode *elist;
 };
 
+// Forward declarations
+//TODO: Get rid of this mess
+struct expr *prefix_fns (struct parser *);
+void cycle_token (struct parser *);
+
+enum op_prec
+get_prec (enum token_type t)
+{
+  switch(t)
+    {
+    case EQ: case NOT_EQ: return EQUALS; break;
+    case LT: case GT: return LESSGREATER; break;
+    case PLUS: case MINUS: return SUM; break;
+    case SLASH: case ASTERISK: return PRODUCT; break;
+    default:
+      printf("Something very terrible has happened get_prec wrong input got %s!\n", toktype_str[t]);
+      return -1;
+    }
+}
+
 struct expr *
 parse_ident (const struct parser *p)
 {
@@ -79,20 +101,51 @@ parse_int (const struct parser *p)
   return e;
 }
 
+struct expr *
+parse_prefix (struct parser *p)
+{
+  struct expr *e = malloc(sizeof(struct expr));
+  e->type = PREFIX_EXPR;
+  cpy_token(&e->token, p->cur_tok);
+  cycle_token(p);
+  e->expr = prefix_fns(p);
+  return e;
+}
+
+struct expr *
+prefix_fns (struct parser *p)
+{
+  switch (p->cur_tok->type)
+    {
+    case IDENT:
+      return parse_ident(p);
+    case INT:
+      return parse_int(p);
+    case BANG:
+      return parse_prefix(p);
+    default:
+      return NULL;
+    }
+}
+
+/*
 struct expr * (*prefix_fns[])(const struct parser *p) =
 {
   parse_ident,
   parse_int
 };
-
+*/
 struct expr *
-parse_expr (const struct parser *p, enum op_prec prec)
+parse_expr (struct parser *p, enum op_prec prec)
 {
+  /*
   struct expr *(*prefix)(const struct parser *p) = prefix_fns[p->cur_tok->type];
   if (!prefix)
     return NULL;
 
   return prefix(p);
+  */
+  return prefix_fns(p);
 }
   
 struct enode *
@@ -159,6 +212,8 @@ free_expr (struct expr *e)
     free(e->ident);
   if (e->token.literal)
     free(e->token.literal);
+  if (e->type == PREFIX_EXPR)    
+    free_expr(e->expr);
   free(e);
 }
 
