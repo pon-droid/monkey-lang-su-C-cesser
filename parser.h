@@ -2,6 +2,9 @@
 
 #include "lexer.h"
 
+#define LEFT (0)
+#define RIGHT (1)
+
 enum stmt_type
 {
   LET_STMT,
@@ -14,6 +17,7 @@ enum expr_type
   INT_EXPR,
   IDENT_EXPR,
   PREFIX_EXPR,
+  INFIX_EXPR
 };
 
 enum op_prec
@@ -35,7 +39,7 @@ struct expr
   {
     int integer;
     char *ident;
-    struct expr *expr;
+    struct expr *expr[2];
   };
 };
 
@@ -64,7 +68,7 @@ struct parser
 // Forward declarations
 //TODO: Get rid of this mess
 struct expr *prefix_fns (struct parser *);
-void cycle_token (struct parser *);
+struct expr * parse_expr (struct parser *, enum op_prec);
 
 enum op_prec
 get_prec (enum token_type t)
@@ -76,9 +80,18 @@ get_prec (enum token_type t)
     case PLUS: case MINUS: return SUM; break;
     case SLASH: case ASTERISK: return PRODUCT; break;
     default:
-      printf("Something very terrible has happened get_prec wrong input got %s!\n", toktype_str[t]);
-      return -1;
+      return LOWEST;
     }
+}
+
+void
+cycle_token (struct parser *p)
+{
+  if (p->cur_tok)
+    free_token(p->cur_tok);
+  
+  p->cur_tok = p->peek_tok;
+  p->peek_tok = next_tok(p->l);
 }
 
 struct expr *
@@ -108,7 +121,7 @@ parse_prefix (struct parser *p)
   e->type = PREFIX_EXPR;
   cpy_token(&e->token, p->cur_tok);
   cycle_token(p);
-  e->expr = prefix_fns(p);
+  e->expr[RIGHT] = parse_expr(p, PREFIX);
   return e;
 }
 
@@ -121,31 +134,51 @@ prefix_fns (struct parser *p)
       return parse_ident(p);
     case INT:
       return parse_int(p);
-    case BANG:
+    case BANG: case MINUS:
       return parse_prefix(p);
     default:
       return NULL;
     }
 }
 
-/*
-struct expr * (*prefix_fns[])(const struct parser *p) =
+int is_infix (enum token_type t)
 {
-  parse_ident,
-  parse_int
-};
-*/
+  if (t == PLUS || t == MINUS || t == SLASH || t == ASTERISK || t == EQ || t == NOT_EQ || t == LT || t == GT)
+    return 1;
+  return 0;
+}
+
+struct expr *
+parse_infix_expr (struct parser *p, struct expr *left)
+{
+  struct expr *e = malloc(sizeof(struct expr));
+  e->type = INFIX_EXPR;
+  cpy_token(&e->token, p->cur_tok);
+  enum op_prec prec = get_prec(p->cur_tok->type);
+  cycle_token(p);
+  e->expr[LEFT] = left;
+  e->expr[RIGHT] = parse_expr(p, prec);
+  return e;
+}
+
 struct expr *
 parse_expr (struct parser *p, enum op_prec prec)
 {
-  /*
-  struct expr *(*prefix)(const struct parser *p) = prefix_fns[p->cur_tok->type];
-  if (!prefix)
+  struct expr *left = prefix_fns(p);
+  if (!left)
     return NULL;
 
-  return prefix(p);
-  */
-  return prefix_fns(p);
+  while (p->peek_tok->type != SEMICOLON && prec < get_prec(p->peek_tok->type))
+    {
+      if (!is_infix(p->peek_tok->type))
+	return left;
+
+      cycle_token(p);
+      left = parse_infix_expr(p, left);
+    }
+	  
+
+  return left;
 }
   
 struct enode *
@@ -170,16 +203,6 @@ get_parser (struct lexer *l)
       .peek_tok = next_tok(l),
       .elist = NULL,
     };
-}
-
-void
-cycle_token (struct parser *p)
-{
-  if (p->cur_tok)
-    free_token(p->cur_tok);
-  
-  p->cur_tok = p->peek_tok;
-  p->peek_tok = next_tok(p->l);
 }
 
 void
@@ -213,7 +236,12 @@ free_expr (struct expr *e)
   if (e->token.literal)
     free(e->token.literal);
   if (e->type == PREFIX_EXPR)    
-    free_expr(e->expr);
+    free_expr(e->expr[RIGHT]);
+  if (e->type == INFIX_EXPR)
+    {
+      free_expr(e->expr[LEFT]);
+      free_expr(e->expr[RIGHT]);
+    }
   free(e);
 }
 
@@ -296,7 +324,7 @@ get_expr_stmt (struct parser *p)
 
   if (expect_peek(p, SEMICOLON))
     cycle_token(p);
-  
+
   return s;
 }
 
