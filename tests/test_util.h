@@ -25,10 +25,9 @@ get_buffer (void)
 void
 append_buffer (struct debug_buffer *b, char *c)
 {
-  if ((b->count + 1) >= b->size)
+  if ((b->count + strlen(c) + 1) >= b->size)
     {
-      b->size *= 2;
-      //     printf("%d and %d\n %d and %d\n", b->size, b->count, sizeof(char), sizeof(char *));
+      b->size += b->count * 2 + strlen(c) + 1;
       b->buffer = realloc(b->buffer, sizeof(char *) * b->size);
     }
   b->buffer[b->count++] = c;
@@ -47,9 +46,6 @@ expr_string (struct debug_buffer *b, const struct expr *e)
 {
   switch(e->type)
     {
-    case INT_EXPR: case IDENT_EXPR:
-      append_buffer(b, e->token.literal); 
-      break;
     case PREFIX_EXPR:
       append_buffer(b, "(");
       append_buffer(b, e->token.literal);
@@ -65,8 +61,8 @@ expr_string (struct debug_buffer *b, const struct expr *e)
       expr_string(b, e->expr[RIGHT]);
       append_buffer(b, ")");
       break;
-      //    case BOOL_EXPR:
-      
+    default:
+      append_buffer(b, e->token.literal);
     }
 }
 
@@ -80,21 +76,21 @@ print_buffer (struct debug_buffer *b)
   printf("\n");
 }
 
-char *
+void
 buffer_string (struct debug_buffer *b)
 {
-  char *str = malloc(sizeof(char) * b->count);
+  char *str = malloc(sizeof(char) * b->size);
   int size = 0;
-  
+
   for(int i = 0; i < b->count; i++)
     {
       int length = strlen(b->buffer[i]); //Without null delimiter
+
       memcpy(str + size, b->buffer[i], length);
       size += length;
     }
-  str[b->count + 1] = '\0';
+  str[size] = '\0';
   b->str = str;
-  return str;
 }
 
 int
@@ -104,17 +100,17 @@ test_prec (const char *input, const char *output)
   struct parser p = get_parser(&l);
   struct stmt *s = get_stmt(&p);
   struct debug_buffer *b = get_buffer();
-  
   assert(s->type == EXPR_STMT);
   expr_string(b, s->expr);
   buffer_string(b);
-  int success = !strcmp(b->str, output);
+  
+  int success = (strcmp(b->str, output) == 0);
   if (!success)
     {
-    print_buffer(b);
-    getfree_errors(&p.elist);
+      getfree_errors(&p.elist, 0);
     }
   free_stmt(s);
+  getfree_errors(&p.elist, 1);
   free_parser(&p);
   free_debug_buf(b);
   return success;

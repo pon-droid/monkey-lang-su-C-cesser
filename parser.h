@@ -133,6 +133,7 @@ parse_bool (const struct parser *p)
   struct expr *e = malloc(sizeof(struct expr));
   e->type = BOOL_EXPR;
   cpy_token(&e->token, p->cur_tok);
+  e->bool = e->token.type == TRUE ? 1 : 0;
   return e;
 }
 
@@ -364,14 +365,15 @@ free_parser (struct parser *p)
 }
 
 void
-getfree_errors (struct enode **elist)
+getfree_errors (struct enode **elist, int ignore)
 {
   struct enode *cur = *elist;
   struct enode *node = cur;
   while (node)
     {
       node = cur->node;
-      printf("parser error: expected token type %s got %s instead!\n", toktype_str[cur->expect_tok], toktype_str[cur->got_tok]);
+      if (!ignore)
+	printf("parser error: expected token type %s got %s instead!\n", toktype_str[cur->expect_tok], toktype_str[cur->got_tok]);
       free(cur);
       cur = node;
     }

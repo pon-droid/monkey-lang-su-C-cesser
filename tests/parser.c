@@ -9,7 +9,7 @@ test_ident (void)
   struct lexer l = get_lexer(input);
   struct parser p = get_parser(&l);
   struct stmt *s = get_stmt(&p);
-  getfree_errors(&p.elist);
+  getfree_errors(&p.elist, 0);
   assert(s->type == EXPR_STMT);
   printf("%s\n", s->expr->ident);
   assert(s->expr->type == IDENT_EXPR);
@@ -24,7 +24,7 @@ test_int (void)
   struct lexer l = get_lexer(input);
   struct parser p = get_parser(&l);
   struct stmt *s = get_stmt(&p);
-  getfree_errors(&p.elist);
+  getfree_errors(&p.elist, 0);
   assert(s->type == EXPR_STMT);
   printf("%d\n", s->expr->integer);
   assert(s->expr->type == INT_EXPR);
@@ -39,7 +39,7 @@ test_prefix (void)
   struct lexer l = get_lexer(input);
   struct parser p = get_parser(&l);
   struct stmt *s = get_stmt(&p);
-  getfree_errors(&p.elist);
+  getfree_errors(&p.elist, 0);
   assert(s->type == EXPR_STMT);
   printf("%s\n", s->expr->token.literal);
   //  printf("%d\n", s->expr->expr->integer);
@@ -56,7 +56,7 @@ test_minix (void)
   struct lexer l = get_lexer(input);
   struct parser p = get_parser(&l);
   struct stmt *s = get_stmt(&p);
-  getfree_errors(&p.elist);
+  getfree_errors(&p.elist, 0);
   printf("work\n");
   assert(s->type == EXPR_STMT);
   printf("%s\n", s->expr->token.literal);
@@ -128,7 +128,7 @@ test_infix (void)
   struct lexer l = get_lexer(input);
   struct parser p = get_parser(&l);
   struct stmt *s = get_stmt(&p);
-  getfree_errors(&p.elist);
+  getfree_errors(&p.elist, 0);
   //assert(s->type == EXPR_STMT);
   //assert(s->expr->type == INFIX_EXPR);
   //  assert(s->expr->expr[LEFT]->integer == 5);
@@ -153,7 +153,7 @@ test_infix (void)
 void
 operator_test (void)
 {
-  PREVERI("-a * b", "((-a) * b)");
+  PREVERI("-abbbbbbbbbbbbbbbbbbbbbbbbb * b", "((-abbbbbbbbbbbbbbbbbbbbbbbbb) * b)");
   PREVERI("!-a", "(!(-a))");
   PREVERI("a + b + c", "((a + b) + c)");
   PREVERI("a + b - c", "((a + b) - c)");
@@ -170,61 +170,19 @@ operator_test (void)
   PREVERI("3 + 4 * 5 == 3 * 1 + 4 * 5", "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))");
 }
 
+void
+test_bool (void)
+{
+  PREVERI("true", "true");
+  PREVERI("false", "false");
+  PREVERI("3 > 5 == false", "((3 > 5) == false)");
+  PREVERI("3 < 5 == true", "((3 < 5) == true)");
+}
+
 int
 main (void)
 {
-  //test_ident();
-  //test_int();
-  //test_prefix();
-  //printf("minus\n");
-  //test_minix();
-  //test_infix();
   operator_test();
-  /*
-  struct debug_buffer *buff = get_buffer();
-    const char *input = "5 < 4 != 3 > 4;";
-  struct lexer l = get_lexer(input);
-  struct parser p = get_parser(&l);
-  struct stmt *s = get_stmt(&p);
-  getfree_errors(&p.elist);
-  expr_string(buff, s->expr);
-  //  print_buffer(buff);
-  //  buffer_string(buff);
-    printf("%s\n", buffer_string(buff));
-  free_debug_buf(buff);
-  free_stmt(s);
-  free_parser(&p);
-
-  const char *input =
-    "let  5;\n"
-    "let  = 10;\n"
-    "let foobar = 838383;\n"
-    ;
-  input =
-     "return 5;\n"
-     "return 10;\n"
-     "return 993322;\n";
-     
-  struct lexer l = get_lexer(input);
-  struct parser p = get_parser(&l);
-
-  
-  const char *tests[3] =
-    {
-      [0] = "x",
-      [1] = "y",
-      [2] = "foobar",
-    };
-    
-  for (int i = 0; i < 3; i++)
-    {
-      struct stmt *s = get_stmt(&p);
-      if (s) {
-        assert(s->token.type == RETURN); free_stmt(s);  } else {
-	cycle_token(&p); getfree_errors(&p.elist); assert(0);}
-    }
-  getfree_errors(&p.elist);
-  free_parser(&p);
-  */
+  test_bool();
   return 0;
 }
