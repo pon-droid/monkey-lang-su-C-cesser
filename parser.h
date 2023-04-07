@@ -71,7 +71,8 @@ struct parser
 //TODO: Get rid of this mess
 struct expr *prefix_fns (struct parser *);
 struct expr * parse_expr (struct parser *, enum op_prec);
-
+int expect_peek (struct parser *, enum token_type);
+  
 enum op_prec
 get_prec (enum token_type t)
 {
@@ -138,6 +139,16 @@ parse_bool (const struct parser *p)
 }
 
 struct expr *
+parse_group (struct parser *p)
+{
+  cycle_token(p);
+  struct expr *e = parse_expr(p, LOWEST);
+  expect_peek(p, RPAREN);
+  cycle_token(p);
+  return e;
+}
+
+struct expr *
 prefix_fns (struct parser *p)
 {
   switch (p->cur_tok->type)
@@ -150,6 +161,8 @@ prefix_fns (struct parser *p)
       return parse_prefix(p);
     case TRUE: case FALSE:
       return parse_bool(p);
+    case LPAREN:
+      return parse_group(p);
     default:
       return NULL;
     }
@@ -337,7 +350,7 @@ get_expr_stmt (struct parser *p)
   s->expr = parse_expr(p, LOWEST);
 
   if (expect_peek(p, SEMICOLON))
-    cycle_token(p);
+     cycle_token(p);
 
   return s;
 }

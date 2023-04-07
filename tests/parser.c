@@ -2,6 +2,7 @@
 #include "../parser.h"
 #include <assert.h>
 #include "test_util.h"
+
 void
 test_ident (void)
 {
@@ -66,61 +67,7 @@ test_minix (void)
   free_stmt(s);
   free_parser(&p);
 }
-/*
-void
-expr_string (struct expr *e)
-{
-  switch(e->type)
-    {
-    case INT_EXPR:
-      printf("%s",e->token.literal);
-      break;
-    case IDENT_EXPR:
-      printf("%s",e->ident);
-      break;
-    case PREFIX_EXPR:
-      printf("( %s", e->token.literal);
-      expr_string(e->expr[RIGHT]);
-      printf(" )");
-      break;
-    case INFIX_EXPR:
-      printf("( ");
-      expr_string(e->expr[LEFT]);
-      printf(" %s ", e->token.literal);
-      expr_string(e->expr[RIGHT]);
-      printf(")");
-    }
-}
 
-void
-printf_infix (struct expr *e)
-{
-  if (e->type == INFIX_EXPR && e->expr[LEFT]->type == INFIX_EXPR)
-    {
-      printf("(");
-      printf_infix(e->expr[LEFT]);
-      printf(")");
-      return;
-    }
-  
-
-  // else if (e->type == INFIX_EXPR) {
-    int i = LEFT;
-    while (i <= RIGHT)
-      {
-	if (e->expr[i]->type == INT_EXPR)
-	  printf("%d", e->expr[i]->integer);
-	if (e->expr[i]->type == IDENT_EXPR)
-	  printf("%s", e->expr[i]->ident);
-	if (i == LEFT)
-	  printf(" %s ", e->token.literal);
-	
-	i++;
-      }
-    //    printf("\n");
-    //  }
-}
-*/
 void
 test_infix (void)
 {
@@ -179,10 +126,26 @@ test_bool (void)
   PREVERI("3 < 5 == true", "((3 < 5) == true)");
 }
 
+void
+test_bracket (void)
+{
+  PREVERI("1 + (2 + 3) + 4", "((1 + (2 + 3)) + 4)");
+  PREVERI("(5 + 5) * 2", "((5 + 5) * 2)");
+  PREVERI("2 / (5 + 5)", "(2 / (5 + 5))");
+  PREVERI("-(5 + 5)", "(-(5 + 5))");
+  PREVERI("!(true == true)", "(!(true == true))");
+}
+
 int
 main (void)
 {
+  test_ident();
+  test_int();
+  test_infix();
+  test_minix();
+  test_prefix();
   operator_test();
   test_bool();
+  test_bracket();
   return 0;
 }
