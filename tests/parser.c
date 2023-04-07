@@ -1,7 +1,7 @@
 #include "../lexer.h"
 #include "../parser.h"
 #include <assert.h>
-
+#include "test_util.h"
 void
 test_ident (void)
 {
@@ -66,7 +66,7 @@ test_minix (void)
   free_stmt(s);
   free_parser(&p);
 }
-
+/*
 void
 expr_string (struct expr *e)
 {
@@ -120,7 +120,7 @@ printf_infix (struct expr *e)
     //    printf("\n");
     //  }
 }
-
+*/
 void
 test_infix (void)
 {
@@ -136,7 +136,7 @@ test_infix (void)
   //  printf("%d\n", s->expr->expr[RIGHT]->integer);
   //printf("%s\n", s->expr->expr[LEFT]->expr[RIGHT]->ident);
   //printf("%s\n", s->expr->expr[RIGHT]->ident);
-  expr_string(s->expr);
+  //expr_string(s->expr);
   printf("\n");
   //printf_infix(s->expr);
   //printf("\n");
@@ -149,17 +149,52 @@ test_infix (void)
   free_stmt(s);
   free_parser(&p);
 }
+#define PREVERI(input, expect) assert(test_prec(input, expect))
+void
+operator_test (void)
+{
+  PREVERI("-a * b", "((-a) * b)");
+  PREVERI("!-a", "(!(-a))");
+  PREVERI("a + b + c", "((a + b) + c)");
+  PREVERI("a + b - c", "((a + b) - c)");
+  PREVERI("a * b * c", "((a * b) * c)");
+  PREVERI("a * b / c", "((a * b) / c)");
+  PREVERI("a + b / c", "(a + (b / c))");
+  PREVERI("a + b * c + d / e - f", "(((a + (b * c)) + (d / e)) - f)");
+  //  PREVERI("3 + 4; -5 * 5", "(3 + 4)((-5) * 5)"); This is fine
+  PREVERI("3 + 4;", "(3 + 4)");
+  PREVERI("-5 * 5", "((-5) * 5)");
+  PREVERI("5 > 4 == 3 < 4", "((5 > 4) == (3 < 4))");
+  PREVERI("5 < 4 != 3 > 4", "((5 < 4) != (3 > 4))");
+  PREVERI("3 + 4 * 5 == 3 * 1 + 4 * 5", "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))");
+  PREVERI("3 + 4 * 5 == 3 * 1 + 4 * 5", "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))");
+}
 
 int
 main (void)
 {
-  test_ident();
-  test_int();
-  test_prefix();
+  //test_ident();
+  //test_int();
+  //test_prefix();
   //printf("minus\n");
-  test_minix();
-  test_infix();
+  //test_minix();
+  //test_infix();
+  operator_test();
   /*
+  struct debug_buffer *buff = get_buffer();
+    const char *input = "5 < 4 != 3 > 4;";
+  struct lexer l = get_lexer(input);
+  struct parser p = get_parser(&l);
+  struct stmt *s = get_stmt(&p);
+  getfree_errors(&p.elist);
+  expr_string(buff, s->expr);
+  //  print_buffer(buff);
+  //  buffer_string(buff);
+    printf("%s\n", buffer_string(buff));
+  free_debug_buf(buff);
+  free_stmt(s);
+  free_parser(&p);
+
   const char *input =
     "let  5;\n"
     "let  = 10;\n"

@@ -17,7 +17,8 @@ enum expr_type
   INT_EXPR,
   IDENT_EXPR,
   PREFIX_EXPR,
-  INFIX_EXPR
+  INFIX_EXPR,
+  BOOL_EXPR
 };
 
 enum op_prec
@@ -40,6 +41,7 @@ struct expr
     int integer;
     char *ident;
     struct expr *expr[2];
+    int bool;
   };
 };
 
@@ -126,6 +128,15 @@ parse_prefix (struct parser *p)
 }
 
 struct expr *
+parse_bool (const struct parser *p)
+{
+  struct expr *e = malloc(sizeof(struct expr));
+  e->type = BOOL_EXPR;
+  cpy_token(&e->token, p->cur_tok);
+  return e;
+}
+
+struct expr *
 prefix_fns (struct parser *p)
 {
   switch (p->cur_tok->type)
@@ -136,6 +147,8 @@ prefix_fns (struct parser *p)
       return parse_int(p);
     case BANG: case MINUS:
       return parse_prefix(p);
+    case TRUE: case FALSE:
+      return parse_bool(p);
     default:
       return NULL;
     }
