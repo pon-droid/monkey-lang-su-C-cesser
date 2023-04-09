@@ -110,7 +110,7 @@ test_prec (const char *input, const char *output)
       getfree_errors(&p.elist, 0);
     }
   free_stmt(s);
-  getfree_errors(&p.elist, 1);
+  getfree_errors(&p.elist, 0);
   free_parser(&p);
   free_debug_buf(b);
   return success;

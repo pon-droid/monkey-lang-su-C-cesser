@@ -4,6 +4,61 @@
 #include "test_util.h"
 
 void
+test_let (void)
+{
+   const char *input =
+    "let x = 5;\n"
+    "let y = 10;\n"
+    "let foobar = 838383;\n"
+    ;
+     
+  struct lexer l = get_lexer(input);
+  struct parser p = get_parser(&l);
+  
+  const char *tests[3] =
+    {
+      [0] = "x",
+      [1] = "y",
+      [2] = "foobar",
+    };
+    
+  for (int i = 0; i < 3; i++)
+    {
+      struct stmt *s = get_stmt(&p);
+      assert(s);
+      assert(s->type == LET_STMT);
+      assert(s->token.type == LET);
+      assert(strcmp(s->ident.literal, tests[i]) == 0);
+      free_stmt(s);
+    }
+  getfree_errors(&p.elist, 0);
+  free_parser(&p);
+}
+
+void
+test_return (void)
+{
+  const char *input =
+    "return 5;\n"
+    "return 10;\n"
+    "return 993322;\n";
+
+  struct lexer l = get_lexer(input);
+  struct parser p = get_parser(&l);
+
+  for (int i = 0; i < 3; i++)
+    {
+      struct stmt *s = get_stmt(&p);
+      assert(s);
+      assert(s->type == RET_STMT);
+      assert(s->token.type == RETURN);
+      free_stmt(s);
+    }
+  getfree_errors(&p.elist, 0);
+  free_parser(&p);
+}
+ 
+void
 test_ident (void)
 {
   const char *input = "foobar;";
@@ -108,7 +163,7 @@ operator_test (void)
   PREVERI("a * b / c", "((a * b) / c)");
   PREVERI("a + b / c", "(a + (b / c))");
   PREVERI("a + b * c + d / e - f", "(((a + (b * c)) + (d / e)) - f)");
-  //  PREVERI("3 + 4; -5 * 5", "(3 + 4)((-5) * 5)"); This is fine
+//PREVERI("3 + 4; -5 * 5", "(3 + 4)((-5) * 5)"); This is fine
   PREVERI("3 + 4;", "(3 + 4)");
   PREVERI("-5 * 5", "((-5) * 5)");
   PREVERI("5 > 4 == 3 < 4", "((5 > 4) == (3 < 4))");
@@ -139,6 +194,8 @@ test_bracket (void)
 int
 main (void)
 {
+  test_let();
+  test_return();
   test_ident();
   test_int();
   test_infix();

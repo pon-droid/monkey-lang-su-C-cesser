@@ -3,6 +3,9 @@
 #include "lexer.h"
 
 #define LEFT (0)
+#define COND (0)
+#define THEN (0)
+#define ALT (1)
 #define RIGHT (1)
 
 enum stmt_type
@@ -18,7 +21,8 @@ enum expr_type
   IDENT_EXPR,
   PREFIX_EXPR,
   INFIX_EXPR,
-  BOOL_EXPR
+  BOOL_EXPR,
+  IF_EXPR,
 };
 
 enum op_prec
@@ -32,6 +36,8 @@ enum op_prec
   CALL,
 };
 
+struct stmt_list;
+
 struct expr
 {
   enum expr_type type;
@@ -42,6 +48,7 @@ struct expr
     char *ident;
     struct expr *expr[2];
     int bool;
+    struct stmt_list *stmt_lists[2];
   };
 };
 
@@ -59,6 +66,14 @@ struct enode
   struct enode *node;
 };
 
+struct stmt_list
+{
+  struct stmt **list;
+  int count;
+  int size;
+  struct token token; // {
+};
+
 struct parser
 {
   struct lexer *l;
@@ -67,11 +82,13 @@ struct parser
   struct enode *elist;
 };
 
+
 // Forward declarations
 //TODO: Get rid of this mess
 struct expr *prefix_fns (struct parser *);
 struct expr * parse_expr (struct parser *, enum op_prec);
 int expect_peek (struct parser *, enum token_type);
+struct stmt * get_stmt (struct parser *);
   
 enum op_prec
 get_prec (enum token_type t)
@@ -144,7 +161,6 @@ parse_group (struct parser *p)
   cycle_token(p);
   struct expr *e = parse_expr(p, LOWEST);
   expect_peek(p, RPAREN);
-  cycle_token(p);
   return e;
 }
 
@@ -174,6 +190,62 @@ int is_infix (enum token_type t)
     return 1;
   return 0;
 }
+
+void
+append_stmt_list (struct stmt_list *slist, struct stmt *s)
+{
+  if (((slist->count + 1) * sizeof(struct stmt)) >= slist->size)
+    {
+      slist->size *= 2;
+      slist->list = realloc(slist->list, sizeof(struct stmt *) * slist->size);
+    }
+  slist->list[slist->count++] = s;
+}
+
+struct stmt_list *
+get_stmt_list (struct parser *p)
+{
+  struct stmt_list *s = malloc(sizeof(struct stmt_list));
+  s->count = 0;
+  s->size = 2;
+  s->list = malloc(sizeof(struct stmt *) * s->size);
+
+  s->token = *p->cur_tok;
+  cycle_token(p);
+
+  while (p->cur_tok->type != RBRACE && p->cur_tok->type != END_FILE)
+    {
+      struct stmt *state = get_stmt(p);
+      if (state)
+	append_stmt_list(s, state);
+      cycle_token(p);
+    }
+  return s;
+}
+
+struct expr *
+parse_if_expr (struct parser *p)
+{
+  struct expr *e = malloc(sizeof(struct expr));
+  e->type = IF_EXPR;
+
+  if (!expect_peek(p, LPAREN))
+    return NULL;
+
+  cycle_token(p);
+  e->expr[COND] = parse_expr(p, LOWEST);
+
+  if (!expect_peek(p, RPAREN))
+    return NULL;
+
+  if (!expect_peek(p, LBRACE))
+    return NULL;
+
+  e->stmt_lists[THEN] = get_stmt_list(p);
+
+  return e;
+}
+  
 
 struct expr *
 parse_infix_expr (struct parser *p, struct expr *left)
@@ -250,7 +322,10 @@ int
 expect_peek (struct parser *p, enum token_type t)
 {
   if (p->peek_tok->type == t)
-    return 1;
+    {
+      cycle_token(p);
+      return 1;
+    }
   new_error(&p->elist, t, p->peek_tok->type);
   return 0;
 }
@@ -303,7 +378,7 @@ get_let_stmt (struct parser *p)
       return NULL;
     }
 
-  cycle_token(p);
+  //  cycle_token(p);
   cpy_token(&s->ident, p->cur_tok);
 
   if (!expect_peek(p, ASSIGN))
@@ -349,9 +424,9 @@ get_expr_stmt (struct parser *p)
   cpy_token(&s->token, p->cur_tok);
   s->expr = parse_expr(p, LOWEST);
 
-  if (expect_peek(p, SEMICOLON))
-     cycle_token(p);
-
+  if (p->peek_tok->type == SEMICOLON)
+    cycle_token(p);
+  
   return s;
 }
 
