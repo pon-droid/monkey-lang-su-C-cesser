@@ -191,6 +191,43 @@ test_bracket (void)
   PREVERI("!(true == true)", "(!(true == true))");
 }
 
+void
+test_if (void)
+{
+  const char *input = "if (x < y) { x }";
+  struct lexer l = get_lexer(input);
+  struct parser p = get_parser(&l);
+
+  struct stmt *s = get_stmt(&p);
+  getfree_errors(&p.elist, 0);
+  
+  assert(s);
+  assert(s->type == EXPR_STMT);
+  assert(s->expr->type == IF_EXPR);
+  assert(strcmp(s->expr->stmt_lists[THEN]->list[0]->expr->ident, "x") == 0);
+  free_stmt(s);
+  free_parser(&p);
+}
+
+void
+test_if_else (void)
+{
+  const char *input = "if (x < y) { x } else { y }";
+  struct lexer l = get_lexer(input);
+  struct parser p = get_parser(&l);
+
+  struct stmt *s = get_stmt(&p);
+  getfree_errors(&p.elist, 0);
+  
+  assert(s);
+  assert(s->type == EXPR_STMT);
+  assert(s->expr->type == IF_EXPR);
+  assert(strcmp(s->expr->stmt_lists[THEN]->list[0]->expr->ident, "x") == 0);
+  assert(strcmp(s->expr->stmt_lists[ALT]->list[0]->expr->ident, "y") == 0);
+  free_stmt(s);
+  free_parser(&p);
+}
+
 int
 main (void)
 {
@@ -204,5 +241,7 @@ main (void)
   operator_test();
   test_bool();
   test_bracket();
+  test_if();
+  test_if_else();
   return 0;
 }

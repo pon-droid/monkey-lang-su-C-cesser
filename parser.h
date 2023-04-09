@@ -48,8 +48,8 @@ struct expr
     char *ident;
     struct expr *expr[2];
     int bool;
-    struct stmt_list *stmt_lists[2];
   };
+  struct stmt_list *stmt_lists[2];
 };
 
 struct stmt
@@ -82,14 +82,16 @@ struct parser
   struct enode *elist;
 };
 
-
 // Forward declarations
 //TODO: Get rid of this mess
 struct expr *prefix_fns (struct parser *);
 struct expr * parse_expr (struct parser *, enum op_prec);
 int expect_peek (struct parser *, enum token_type);
 struct stmt * get_stmt (struct parser *);
-  
+struct expr * parse_if_expr (struct parser *);
+void free_expr (struct expr *);
+void free_stmt (struct stmt *);
+
 enum op_prec
 get_prec (enum token_type t)
 {
@@ -179,6 +181,8 @@ prefix_fns (struct parser *p)
       return parse_bool(p);
     case LPAREN:
       return parse_group(p);
+    case IF:
+      return parse_if_expr(p);
     default:
       return NULL;
     }
@@ -228,6 +232,7 @@ parse_if_expr (struct parser *p)
 {
   struct expr *e = malloc(sizeof(struct expr));
   e->type = IF_EXPR;
+  cpy_token(&e->token, p->cur_tok);
 
   if (!expect_peek(p, LPAREN))
     return NULL;
@@ -242,10 +247,19 @@ parse_if_expr (struct parser *p)
     return NULL;
 
   e->stmt_lists[THEN] = get_stmt_list(p);
+  e->stmt_lists[ALT] = NULL;
 
+  if (p->peek_tok->type == ELSE)
+    {
+      cycle_token(p);
+
+      if (!expect_peek(p, LBRACE))
+	return NULL;
+
+      e->stmt_lists[ALT] = get_stmt_list(p);
+    }
   return e;
 }
-  
 
 struct expr *
 parse_infix_expr (struct parser *p, struct expr *left)
@@ -331,6 +345,24 @@ expect_peek (struct parser *p, enum token_type t)
 }
 
 void
+free_stmt_list (struct stmt_list *sl)
+{
+  for(int i = 0; i < sl->count; i++)
+      free_stmt(sl->list[i]);
+  free(sl->list);
+  free(sl);
+}
+
+void
+free_if_expr (struct expr *e)
+{
+  free_expr(e->expr[COND]);
+  free_stmt_list(e->stmt_lists[THEN]);
+  if (e->stmt_lists[ALT])
+    free_stmt_list(e->stmt_lists[ALT]);
+}
+  
+void
 free_expr (struct expr *e)
 {
   if (e->type == IDENT_EXPR)
@@ -344,6 +376,8 @@ free_expr (struct expr *e)
       free_expr(e->expr[LEFT]);
       free_expr(e->expr[RIGHT]);
     }
+  if (e->type == IF_EXPR)
+    free_if_expr(e);
   free(e);
 }
 
