@@ -204,6 +204,7 @@ test_if (void)
   assert(s);
   assert(s->type == EXPR_STMT);
   assert(s->expr->type == IF_EXPR);
+  assert(s->expr->cond->type == INFIX_EXPR);
   assert(strcmp(s->expr->stmt_lists[THEN]->list[0]->expr->ident, "x") == 0);
   free_stmt(s);
   free_parser(&p);
@@ -222,6 +223,7 @@ test_if_else (void)
   assert(s);
   assert(s->type == EXPR_STMT);
   assert(s->expr->type == IF_EXPR);
+  assert(s->expr->cond->type == INFIX_EXPR);
   assert(strcmp(s->expr->stmt_lists[THEN]->list[0]->expr->ident, "x") == 0);
   assert(strcmp(s->expr->stmt_lists[ALT]->list[0]->expr->ident, "y") == 0);
   free_stmt(s);

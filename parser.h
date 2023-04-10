@@ -2,11 +2,12 @@
 
 #include "lexer.h"
 
+//infix expressions
 #define LEFT (0)
-#define COND (0)
+#define RIGHT (1)
+//if statement conditions
 #define THEN (0)
 #define ALT (1)
-#define RIGHT (1)
 
 enum stmt_type
 {
@@ -48,8 +49,12 @@ struct expr
     char *ident;
     struct expr *expr[2];
     int bool;
+    struct //if statement stuff
+    {
+      struct expr *cond;
+      struct stmt_list *stmt_lists[2];
+    };
   };
-  struct stmt_list *stmt_lists[2];
 };
 
 struct stmt
@@ -238,7 +243,7 @@ parse_if_expr (struct parser *p)
     return NULL;
 
   cycle_token(p);
-  e->expr[COND] = parse_expr(p, LOWEST);
+  e->cond = parse_expr(p, LOWEST);
 
   if (!expect_peek(p, RPAREN))
     return NULL;
@@ -356,7 +361,7 @@ free_stmt_list (struct stmt_list *sl)
 void
 free_if_expr (struct expr *e)
 {
-  free_expr(e->expr[COND]);
+  free_expr(e->cond);
   free_stmt_list(e->stmt_lists[THEN]);
   if (e->stmt_lists[ALT])
     free_stmt_list(e->stmt_lists[ALT]);
