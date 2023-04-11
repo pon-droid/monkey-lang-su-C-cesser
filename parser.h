@@ -24,6 +24,7 @@ enum expr_type
   INFIX_EXPR,
   BOOL_EXPR,
   IF_EXPR,
+  FN_EXPR,
 };
 
 enum op_prec
@@ -38,6 +39,7 @@ enum op_prec
 };
 
 struct stmt_list;
+struct lit_list;
 
 struct expr
 {
@@ -53,6 +55,11 @@ struct expr
     {
       struct expr *cond;
       struct stmt_list *stmt_lists[2];
+    };
+    struct //fn literal
+    {
+      struct lit_list *params;
+      struct stmt_list *body;
     };
   };
 };
@@ -87,6 +94,13 @@ struct parser
   struct enode *elist;
 };
 
+struct lit_list
+{
+  struct expr **list;
+  int count;
+  int size;
+};
+
 // Forward declarations
 //TODO: Get rid of this mess
 struct expr *prefix_fns (struct parser *);
@@ -96,6 +110,7 @@ struct stmt * get_stmt (struct parser *);
 struct expr * parse_if_expr (struct parser *);
 void free_expr (struct expr *);
 void free_stmt (struct stmt *);
+struct expr * parse_fn_lit (struct parser *);
 
 enum op_prec
 get_prec (enum token_type t)
@@ -188,6 +203,8 @@ prefix_fns (struct parser *p)
       return parse_group(p);
     case IF:
       return parse_if_expr(p);
+    case FUNCTION:
+      return parse_fn_lit(p);
     default:
       return NULL;
     }
@@ -203,12 +220,55 @@ int is_infix (enum token_type t)
 void
 append_stmt_list (struct stmt_list *slist, struct stmt *s)
 {
-  if (((slist->count + 1) * sizeof(struct stmt)) >= slist->size)
+  if (((slist->count + 1)) >= slist->size)
     {
       slist->size *= 2;
       slist->list = realloc(slist->list, sizeof(struct stmt *) * slist->size);
     }
   slist->list[slist->count++] = s;
+}
+//TODO: Make a generic list structure that cleans this up
+void
+append_lit_list (struct lit_list *llist, struct expr *ident)
+{
+  if ((llist->count + 1) >= llist->size)
+    {
+      llist->size *= 2;
+      llist->list = realloc(llist->list, sizeof(struct expr *) * llist->size);
+    }
+  llist->list[llist->count++] = ident;
+}
+
+struct lit_list *
+get_lit_list (struct parser *p)
+{
+
+  if (p->peek_tok->type == RPAREN)
+    {
+      cycle_token(p);
+      return NULL;
+    }
+  
+  cycle_token(p);
+
+  struct lit_list *l = malloc(sizeof(struct lit_list));
+  l->count = 0;
+  l->size = 8;
+  l->list = malloc(l->size * sizeof(struct expr *));
+		   
+  append_lit_list(l, parse_ident(p));
+
+  while (p->peek_tok->type == COMMA)
+    {
+      cycle_token(p);
+      cycle_token(p);
+      append_lit_list(l, parse_ident(p));
+    }
+
+  if (!expect_peek(p, RPAREN))
+    return NULL;
+
+  return l;
 }
 
 struct stmt_list *
@@ -230,6 +290,26 @@ get_stmt_list (struct parser *p)
       cycle_token(p);
     }
   return s;
+}
+
+struct expr *
+parse_fn_lit (struct parser *p)
+{
+  struct expr *e = malloc(sizeof(struct expr));
+  e->type = FN_EXPR;
+  cpy_token(&e->token, p->cur_tok);
+  
+  if (!expect_peek(p, LPAREN))
+    return NULL;
+
+  e->params = get_lit_list(p);
+
+  if (!expect_peek(p, LBRACE))
+    return NULL;
+
+  e->body = get_stmt_list(p);
+
+  return e;
 }
 
 struct expr *
@@ -383,6 +463,17 @@ free_expr (struct expr *e)
     }
   if (e->type == IF_EXPR)
     free_if_expr(e);
+  if (e->type == FN_EXPR)
+    {
+      free_stmt_list(e->body);
+      if (e->params)
+	{
+	  for (int i = 0; i < e->params->count; i++)
+	    free_expr(e->params->list[i]);
+	  free (e->params->list);
+	  free (e->params);
+	}
+    }
   free(e);
 }
 

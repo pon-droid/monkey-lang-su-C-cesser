@@ -230,6 +230,63 @@ test_if_else (void)
   free_parser(&p);
 }
 
+void
+test_fn_literal(void)
+{
+  const char *input = "fn(x, y) { x + y; };";
+  struct lexer l = get_lexer(input);
+  struct parser p = get_parser(&l);
+
+  struct stmt *s = get_stmt(&p);
+  getfree_errors(&p.elist, 0);
+  
+  assert(s);
+  assert(s->type == EXPR_STMT);
+  assert(s->expr->type == FN_EXPR);
+  assert(strcmp(s->expr->params->list[0]->ident, "x") == 0);
+  assert(strcmp(s->expr->params->list[1]->ident, "y") == 0);
+  free_stmt(s);
+  free_parser(&p);
+}
+
+void
+test_fn_literal2(void)
+{
+  const char *input = "fn() {};";
+  struct lexer l = get_lexer(input);
+  struct parser p = get_parser(&l);
+
+  struct stmt *s = get_stmt(&p);
+  getfree_errors(&p.elist, 0);
+  
+  assert(s);
+  assert(s->type == EXPR_STMT);
+  assert(s->expr->type == FN_EXPR);
+  assert(s->expr->params == NULL);
+  free_stmt(s);
+  free_parser(&p);
+}
+
+void
+test_fn_literal3(void)
+{
+  const char *input = "fn(x, y, z) {};";
+  struct lexer l = get_lexer(input);
+  struct parser p = get_parser(&l);
+
+  struct stmt *s = get_stmt(&p);
+  getfree_errors(&p.elist, 0);
+  
+  assert(s);
+  assert(s->type == EXPR_STMT);
+  assert(s->expr->type == FN_EXPR);
+  assert(strcmp(s->expr->params->list[0]->ident, "x") == 0);
+  assert(strcmp(s->expr->params->list[1]->ident, "y") == 0);
+  assert(strcmp(s->expr->params->list[2]->ident, "z") == 0);
+  free_stmt(s);
+  free_parser(&p);
+}
+
 int
 main (void)
 {
@@ -245,5 +302,8 @@ main (void)
   test_bracket();
   test_if();
   test_if_else();
+  test_fn_literal();
+  test_fn_literal2();
+  test_fn_literal3();
   return 0;
 }
