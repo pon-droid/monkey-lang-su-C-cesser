@@ -7,9 +7,9 @@ void
 test_let (void)
 {
    const char *input =
-    "let x = 5;\n"
-    "let y = 10;\n"
-    "let foobar = 838383;\n"
+    "let x = 5;"
+    "let y = 10;"
+    "let foobar = 838383;"
     ;
      
   struct lexer l = get_lexer(input);
@@ -313,6 +313,81 @@ test_call_expr (void)
   free_parser(&p);
 }
 
+void
+test_let_real (void)
+{
+  const char *input =
+    "let x = 5;"
+    "let y = true;"
+    "let foobar = y;";
+
+  struct lexer l = get_lexer(input);
+  struct parser p = get_parser(&l);
+
+  struct stmt *s = get_stmt(&p);
+  getfree_errors(&p.elist, 0);
+  
+  assert(s);
+  assert(s->type == LET_STMT);
+  assert(s->expr->integer == 5);
+  assert(strcmp(s->ident.literal, "x") == 0);
+  
+  free_stmt(s);
+  s = get_stmt(&p);
+  getfree_errors(&p.elist, 0);
+  
+  assert(s->type == LET_STMT);
+  assert(s->expr->bool == 1);
+  assert(strcmp(s->ident.literal, "y") == 0);
+  
+  free_stmt(s);
+  s = get_stmt(&p);
+  getfree_errors(&p.elist, 0);
+
+  assert(s->type == LET_STMT);
+  assert(strcmp(s->expr->ident, "y") == 0);
+  assert(strcmp(s->ident.literal, "foobar") == 0);
+  
+  free_stmt(s);
+  free_parser(&p);
+}
+
+void
+test_ret_real (void)
+{
+  const char *input =
+    "return 5;"
+    "return true;"
+    "return y;";
+
+  struct lexer l = get_lexer(input);
+  struct parser p = get_parser(&l);
+
+  struct stmt *s = get_stmt(&p);
+  getfree_errors(&p.elist, 0);
+  
+  assert(s);
+  assert(s->type == RET_STMT);
+  assert(s->expr->integer == 5);
+  
+  free_stmt(s);
+  s = get_stmt(&p);
+  getfree_errors(&p.elist, 0);
+  
+  assert(s->type == RET_STMT);
+  assert(s->expr->bool == 1);
+  
+  free_stmt(s);
+  s = get_stmt(&p);
+  getfree_errors(&p.elist, 0);
+
+  assert(s->type == RET_STMT);
+  assert(strcmp(s->expr->ident, "y") == 0);
+  
+  free_stmt(s);
+  free_parser(&p);
+}
+
 int
 main (void)
 {
@@ -332,5 +407,7 @@ main (void)
   test_fn_literal2();
   test_fn_literal3();
   test_call_expr();
+  test_let_real();
+  test_ret_real();
   return 0;
 }

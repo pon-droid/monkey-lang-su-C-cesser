@@ -147,7 +147,7 @@ parse_ident (const struct parser *p)
 }
 
 struct expr *
-parse_int (const struct parser *p)
+parse_int (struct parser *p)
 {
   struct expr *e = malloc(sizeof(struct expr));
   e->type = INT_EXPR;
@@ -532,23 +532,27 @@ get_let_stmt (struct parser *p)
   
   if (!expect_peek(p, IDENT))
     {
-      cycle_token(p);
       free_stmt(s);
       return NULL;
     }
 
-  //  cycle_token(p);
   cpy_token(&s->ident, p->cur_tok);
 
   if (!expect_peek(p, ASSIGN))
     {
-      cycle_token(p);
       free_stmt(s);
       return NULL;
     }
-  //TODO: Skipping over expressions
-  for (;p->cur_tok->type != SEMICOLON; cycle_token(p));
+
   cycle_token(p);
+
+  s->expr = parse_expr(p, LOWEST);
+  
+  if (p->peek_tok->type == SEMICOLON)
+    {
+      cycle_token(p);
+      cycle_token(p);
+    }
 
   return s;
 }
@@ -565,9 +569,16 @@ get_ret_stmt (struct parser *p)
 
   cpy_token(&s->token, p->cur_tok);
 
-  //TODO: Skipping over expressions
-  for (;p->cur_tok->type != SEMICOLON; cycle_token(p));
   cycle_token(p);
+
+  s->expr = parse_expr(p, LOWEST);
+  
+  if (p->peek_tok->type == SEMICOLON)
+    {
+      cycle_token(p);
+      cycle_token(p);
+    }
+  
   return s;
 }
 
