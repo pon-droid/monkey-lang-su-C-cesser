@@ -2,10 +2,7 @@ CC=$(CROSS)gcc
 LD=$(CROSS)ld
 AR=$(CROSS)ar
 NAME=interp
-FILES=main.c lexer.h
-
-PKGS=sdl2 SDL2_image
-
+FILES=main.c lexer.h parser.h list.h
 CFLAGS=-Wall -Wextra -pedantic
 
 tests: lexer_test parser_test

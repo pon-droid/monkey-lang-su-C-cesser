@@ -1,6 +1,7 @@
 #pragma once
 
 #include "lexer.h"
+#include "list.h"
 
 //infix expressions
 #define LEFT (0)
@@ -39,7 +40,6 @@ enum op_prec
 };
 
 struct stmt_list;
-struct lit_list;
 
 struct expr
 {
@@ -58,7 +58,7 @@ struct expr
     };
     struct //fn literal
     {
-      struct lit_list *params;
+      struct list *params;
       struct stmt_list *body;
     };
   };
@@ -92,13 +92,6 @@ struct parser
   struct token *cur_tok;
   struct token *peek_tok;
   struct enode *elist;
-};
-
-struct lit_list
-{
-  struct expr **list;
-  int count;
-  int size;
 };
 
 // Forward declarations
@@ -227,19 +220,8 @@ append_stmt_list (struct stmt_list *slist, struct stmt *s)
     }
   slist->list[slist->count++] = s;
 }
-//TODO: Make a generic list structure that cleans this up
-void
-append_lit_list (struct lit_list *llist, struct expr *ident)
-{
-  if ((llist->count + 1) >= llist->size)
-    {
-      llist->size *= 2;
-      llist->list = realloc(llist->list, sizeof(struct expr *) * llist->size);
-    }
-  llist->list[llist->count++] = ident;
-}
 
-struct lit_list *
+struct list *
 get_lit_list (struct parser *p)
 {
 
@@ -251,18 +233,19 @@ get_lit_list (struct parser *p)
   
   cycle_token(p);
 
-  struct lit_list *l = malloc(sizeof(struct lit_list));
+  struct list *l = malloc(sizeof(struct list));
   l->count = 0;
   l->size = 8;
-  l->list = malloc(l->size * sizeof(struct expr *));
+  l->typesize = sizeof(struct expr *);
+  l->list = malloc(l->size * l->typesize);
 		   
-  append_lit_list(l, parse_ident(p));
+  append_list(l, parse_ident(p));
 
   while (p->peek_tok->type == COMMA)
     {
       cycle_token(p);
       cycle_token(p);
-      append_lit_list(l, parse_ident(p));
+      append_list(l, parse_ident(p));
     }
 
   if (!expect_peek(p, RPAREN))

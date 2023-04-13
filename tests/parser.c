@@ -243,8 +243,8 @@ test_fn_literal(void)
   assert(s);
   assert(s->type == EXPR_STMT);
   assert(s->expr->type == FN_EXPR);
-  assert(strcmp(s->expr->params->list[0]->ident, "x") == 0);
-  assert(strcmp(s->expr->params->list[1]->ident, "y") == 0);
+  assert(strcmp(((struct expr *)s->expr->params->list[0])->ident, "x") == 0);
+  assert(strcmp(((struct expr *)s->expr->params->list[1])->ident, "y") == 0);
   free_stmt(s);
   free_parser(&p);
 }
@@ -280,9 +280,9 @@ test_fn_literal3(void)
   assert(s);
   assert(s->type == EXPR_STMT);
   assert(s->expr->type == FN_EXPR);
-  assert(strcmp(s->expr->params->list[0]->ident, "x") == 0);
-  assert(strcmp(s->expr->params->list[1]->ident, "y") == 0);
-  assert(strcmp(s->expr->params->list[2]->ident, "z") == 0);
+  assert(strcmp(((struct expr *)s->expr->params->list[0])->ident, "x") == 0);
+  assert(strcmp(((struct expr *)s->expr->params->list[1])->ident, "y") == 0);
+  assert(strcmp(((struct expr *)s->expr->params->list[2])->ident, "z") == 0);
   free_stmt(s);
   free_parser(&p);
 }
