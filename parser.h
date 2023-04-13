@@ -26,6 +26,7 @@ enum expr_type
   BOOL_EXPR,
   IF_EXPR,
   FN_EXPR,
+  CALL_EXPR,
 };
 
 enum op_prec
@@ -60,6 +61,11 @@ struct expr
     {
       struct list *params;
       struct stmt_list *body;
+    };
+    struct
+    {
+      struct expr *fn; //function or identifier
+      struct list *args;
     };
   };
 };
@@ -114,6 +120,7 @@ get_prec (enum token_type t)
     case LT: case GT: return LESSGREATER; break;
     case PLUS: case MINUS: return SUM; break;
     case SLASH: case ASTERISK: return PRODUCT; break;
+    case LPAREN: return CALL; break;
     default:
       return LOWEST;
     }
@@ -205,7 +212,7 @@ prefix_fns (struct parser *p)
 
 int is_infix (enum token_type t)
 {
-  if (t == PLUS || t == MINUS || t == SLASH || t == ASTERISK || t == EQ || t == NOT_EQ || t == LT || t == GT)
+  if (t == PLUS || t == MINUS || t == SLASH || t == ASTERISK || t == EQ || t == NOT_EQ || t == LT || t == GT || t == LPAREN)
     return 1;
   return 0;
 }
@@ -329,16 +336,53 @@ parse_if_expr (struct parser *p)
   return e;
 }
 
+struct list *
+parse_call_args (struct parser *p)
+{
+  struct list *args = get_list(sizeof(struct expr *));
+
+  if (p->peek_tok->type == RPAREN)
+    {
+      cycle_token(p);
+      return args;
+    }
+
+  cycle_token(p);
+  append_list(args, parse_expr(p, LOWEST));
+
+  while (p->peek_tok->type == COMMA)
+    {
+      cycle_token(p);
+      cycle_token(p);
+      append_list(args, parse_expr(p, LOWEST));
+    }
+
+  if (!expect_peek(p,RPAREN))
+    return NULL;
+
+  return args;
+}
+
 struct expr *
 parse_infix_expr (struct parser *p, struct expr *left)
 {
   struct expr *e = malloc(sizeof(struct expr));
-  e->type = INFIX_EXPR;
   cpy_token(&e->token, p->cur_tok);
-  enum op_prec prec = get_prec(p->cur_tok->type);
-  cycle_token(p);
-  e->expr[LEFT] = left;
-  e->expr[RIGHT] = parse_expr(p, prec);
+
+  if (p->cur_tok->type != LPAREN)
+    {
+      e->type = INFIX_EXPR;
+      enum op_prec prec = get_prec(p->cur_tok->type);
+      cycle_token(p);
+      e->expr[LEFT] = left;
+      e->expr[RIGHT] = parse_expr(p, prec);
+    }
+  else
+    {
+      e->type = CALL_EXPR;
+      e->fn = left;
+      e->args = parse_call_args(p);
+    }
   return e;
 }
 
@@ -429,7 +473,7 @@ free_if_expr (struct expr *e)
   if (e->stmt_lists[ALT])
     free_stmt_list(e->stmt_lists[ALT]);
 }
-  
+
 void
 free_expr (struct expr *e)
 {
@@ -450,13 +494,15 @@ free_expr (struct expr *e)
     {
       free_stmt_list(e->body);
       if (e->params)
-	{
-	  for (int i = 0; i < e->params->count; i++)
-	    free_expr(e->params->list[i]);
-	  free (e->params->list);
-	  free (e->params);
-	}
+	free_list(e->params, free_expr);
     }
+  if (e->type == CALL_EXPR)
+    {
+      free_expr(e->fn);
+      if (e->args)
+	free_list(e->args, free_expr);
+    }
+      
   free(e);
 }
 

@@ -287,6 +287,32 @@ test_fn_literal3(void)
   free_parser(&p);
 }
 
+void
+test_call_expr (void)
+{
+  const char *input = "add(1, 2 * 3, 4 + 5);";
+  struct lexer l = get_lexer(input);
+  struct parser p = get_parser(&l);
+
+  struct stmt *s = get_stmt(&p);
+  getfree_errors(&p.elist, 0);
+  
+  assert(s);
+  assert(s->type == EXPR_STMT);
+  assert(((struct expr *)s->expr->args->list[0])->integer == 1);
+  
+  assert(((struct expr *)s->expr->args->list[1])->expr[LEFT]->integer == 2);
+  assert(((struct expr *)s->expr->args->list[1])->token.type == ASTERISK);
+  assert(((struct expr *)s->expr->args->list[1])->expr[RIGHT]->integer == 3);
+
+  assert(((struct expr *)s->expr->args->list[2])->expr[LEFT]->integer == 4);
+  assert(((struct expr *)s->expr->args->list[2])->token.type == PLUS);
+  assert(((struct expr *)s->expr->args->list[2])->expr[RIGHT]->integer == 5);
+
+  free_stmt(s);
+  free_parser(&p);
+}
+
 int
 main (void)
 {
@@ -305,5 +331,6 @@ main (void)
   test_fn_literal();
   test_fn_literal2();
   test_fn_literal3();
+  test_call_expr();
   return 0;
 }
