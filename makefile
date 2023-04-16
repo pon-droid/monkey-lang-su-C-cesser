@@ -2,10 +2,10 @@ CC=$(CROSS)gcc
 LD=$(CROSS)ld
 AR=$(CROSS)ar
 NAME=interp
-FILES=main.c lexer.h parser.h list.h
+FILES=main.c lexer.h parser.h list.h object.h
 CFLAGS=-Wall -Wextra -pedantic
 
-tests: lexer_test parser_test
+tests: lexer_test parser_test eval_test
 
 all: $(FILES) 
 	$(CC) $(CFLAGS) -o $(NAME) $(FILES) 
@@ -13,3 +13,5 @@ lexer_test: tests/lexer.c
 	$(CC) $(CFLAGS) -o bin/tests/lexer_test -ggdb3 tests/lexer.c
 parser_test: tests/parser.c
 	$(CC) $(CFLAGS) -o bin/tests/parser_test -ggdb3 tests/parser.c
+eval_test: tests/object.c
+	$(CC) $(CFLAGS) -o bin/tests/eval_test -ggdb3 tests/object.c
