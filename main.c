@@ -1,5 +1,5 @@
 #include "object.h"
-#include <assert.h>
+
 //TODO: add GNU readline
 char *
 read_input (FILE *stream)
