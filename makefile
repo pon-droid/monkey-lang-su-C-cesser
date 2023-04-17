@@ -1,14 +1,16 @@
 CC=$(CROSS)gcc
 LD=$(CROSS)ld
 AR=$(CROSS)ar
-NAME=interp
-FILES=main.c lexer.h parser.h list.h object.h
-CFLAGS=-Wall -Wextra -pedantic
+NAME=repl
+FILES=main.c
+CFLAGS=-Wall -Wextra -pedantic -Wno-incompatible-pointer-types
 
 tests: lexer_test parser_test eval_test
 
-all: $(FILES) 
-	$(CC) $(CFLAGS) -o $(NAME) $(FILES) 
+all: repl tests
+
+repl: $(FILES)
+	$(CC) $(CFLAGS) -o bin/$(NAME) $(FILES)
 lexer_test: tests/lexer.c 
 	$(CC) $(CFLAGS) -o bin/tests/lexer_test -ggdb3 tests/lexer.c
 parser_test: tests/parser.c

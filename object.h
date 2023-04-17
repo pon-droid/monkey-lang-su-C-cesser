@@ -32,6 +32,21 @@ get_obj (enum obj_type type, const void *val)
   return obj;
 }
 
+char *
+obj_str (const struct object *obj)
+{
+  char *str;
+  switch (obj->type)
+    {
+    case INT_OBJ:;
+      int len = snprintf(NULL, 0, "%d", obj->integer);
+      str = malloc(len + 1);
+      snprintf(str, len + 1, "%d", obj->integer);
+      break;
+    }
+  return str;
+}
+
 struct object *
 eval_expr (const struct expr *node)
 {
