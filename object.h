@@ -18,6 +18,9 @@ struct object
   };
 };
 
+#define TRUE (&CONSTANT_OBJECTS[1])
+#define FALSE (&CONSTANT_OBJECTS[0])
+
 const struct object CONSTANT_OBJECTS [] =  
 {
   {BOOL_OBJ, .bool = 0},
@@ -38,9 +41,9 @@ get_obj (enum obj_type type, const void *val)
     case BOOL_OBJ:
       free(obj);
       if (*(int *)val == 0)
-	return &CONSTANT_OBJECTS[0];
+	return FALSE;
       else
-	return &CONSTANT_OBJECTS[1];
+	return TRUE;
       break;
     }
   return obj;
@@ -77,12 +80,37 @@ obj_str (const struct object *obj)
 }
 
 struct object *
+eval_bang_op (struct object *obj)
+{
+  enum obj_type t = obj->type;
+  int bool = obj->bool;
+  free_obj(obj);
+  if (t == BOOL_OBJ)
+    return bool ? FALSE : TRUE;
+  else if (t == NULL_OBJ)
+    return TRUE;
+  return FALSE;
+}
+
+struct object *
+eval_prefix_expr (enum token_type op, struct object *obj)
+{
+  switch (op)
+    {
+    case BANG:
+      return eval_bang_op(obj);
+    default:
+      return NULL;
+    }
+}
+struct object *
 eval_expr (const struct expr *node)
 {
   switch (node->type)
     {
     case INT_EXPR: return get_obj(INT_OBJ, &node->integer); break;
     case BOOL_EXPR: return get_obj(BOOL_OBJ, &node->bool); break;
+    case PREFIX_EXPR: return eval_prefix_expr (node->token.type, eval_expr(node->expr[RIGHT])); break;      
     }
 }
 
