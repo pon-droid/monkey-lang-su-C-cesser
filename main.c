@@ -1,5 +1,5 @@
 #include "object.h"
-
+#include <assert.h>
 //TODO: add GNU readline
 char *
 read_input (FILE *stream)
@@ -33,11 +33,11 @@ main (void)
       struct stmt *s = get_stmt(&p);
       getfree_errors(&p.elist, 0);
 
-      struct obj *o = eval(s);
+      struct object *o = eval(s);
       char *eval = obj_str(o);
       printf("%s", eval);
       
-      free(o);
+      free_obj(o);
       free(eval);
       free_stmt(s);
       free_parser(&p);

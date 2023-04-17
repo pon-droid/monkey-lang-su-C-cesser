@@ -7,10 +7,10 @@ struct test
   int output;
 };
 
-int
-main (void)
+void
+test_int (void)
 {
-  struct test tests [] =
+    struct test tests [] =
     {
       {"5", 5},
       {"10", 10},
@@ -32,10 +32,42 @@ main (void)
       assert(o->type == INT_OBJ);
       assert(o->integer == tests[i].output);
       
-      free(o);
+      free_obj(o);
       free_stmt(s);
       free_parser(&p);
     }
+}
 
+void
+test_bool (void)
+{
+  struct test tests [] =
+    {
+      {"true", 1},
+      {"false", 0},
+    };
+
+  for (int i = 0; i < 2; i++)
+    {
+      struct lexer l = get_lexer(tests[i].input);
+      struct parser p = get_parser(&l);
+      struct stmt *s = get_stmt(&p);
+      getfree_errors(&p.elist, 0);
+
+      struct object *o = eval(s);
+      assert(o->type == BOOL_OBJ);
+      assert(o->bool == tests[i].output);
+
+      free_obj(o);
+      free_stmt(s);
+      free_parser(&p);
+    }
+}
+
+int
+main (void)
+{
+  test_int();
+  test_bool();
   return 0;
 }

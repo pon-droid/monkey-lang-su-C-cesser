@@ -18,6 +18,13 @@ struct object
   };
 };
 
+const struct object CONSTANT_OBJECTS [] =  
+{
+  {BOOL_OBJ, .bool = 0},
+  {BOOL_OBJ, .bool = 1},
+  {NULL_OBJ, .bool = 0} //Placeholder
+};
+
 struct object *
 get_obj (enum obj_type type, const void *val)
 {
@@ -28,8 +35,24 @@ get_obj (enum obj_type type, const void *val)
     case INT_OBJ:
       obj->integer = *(int *)val;
       break;
+    case BOOL_OBJ:
+      free(obj);
+      if (*(int *)val == 0)
+	return &CONSTANT_OBJECTS[0];
+      else
+	return &CONSTANT_OBJECTS[1];
+      break;
     }
   return obj;
+}
+
+void
+free_obj (struct object *obj)
+{
+  if (obj->type != BOOL_OBJ && obj->type != NULL_OBJ)
+    {
+      free(obj);
+    }
 }
 
 char *
@@ -43,6 +66,12 @@ obj_str (const struct object *obj)
       str = malloc(len + 1);
       snprintf(str, len + 1, "%d", obj->integer);
       break;
+    case BOOL_OBJ:
+      if (obj->bool)
+	return strdup("true");
+      else
+	return strdup("false");
+      break;
     }
   return str;
 }
@@ -53,6 +82,7 @@ eval_expr (const struct expr *node)
   switch (node->type)
     {
     case INT_EXPR: return get_obj(INT_OBJ, &node->integer); break;
+    case BOOL_EXPR: return get_obj(BOOL_OBJ, &node->bool); break;
     }
 }
 
