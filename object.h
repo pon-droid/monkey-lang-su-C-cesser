@@ -93,12 +93,23 @@ eval_bang_op (struct object *obj)
 }
 
 struct object *
+eval_minus_op (struct object *obj)
+{
+  if (obj->type != INT_OBJ)
+    return NULL;
+  obj->integer *= -1;
+  return obj;
+}
+
+struct object *
 eval_prefix_expr (enum token_type op, struct object *obj)
 {
   switch (op)
     {
     case BANG:
       return eval_bang_op(obj);
+    case MINUS:
+      return eval_minus_op(obj);
     default:
       return NULL;
     }
