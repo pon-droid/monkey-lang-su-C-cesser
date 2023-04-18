@@ -128,11 +128,66 @@ test_prefix (void)
     }
 }
 
+void
+test_if_expr (void)
+{
+  struct test tests [] =
+    {
+      {"if (true) { 10 }", 10},
+      {"if (1) { 10 }", 10},
+      {"if (1 < 2) { 10 }", 10},
+      {"if (1 > 2) { 10 } else { 20 }", 20},
+      {"if (1 < 2) { 10 } else { 20 }", 10}, 
+    };
+
+  for (int i = 0; i < sizeof(tests)/sizeof(tests[0]); i++)
+    {
+      struct lexer l = get_lexer(tests[i].input);
+      struct parser p = get_parser(&l);
+      struct stmt *s = get_stmt(&p);
+      getfree_errors(&p.elist, 0);
+
+      struct object *o = eval(s);
+      assert(o->integer == tests[i].output);
+
+      free_obj(o);
+      free_stmt(s);
+      free_parser(&p);
+    }
+}
+
+void
+test_void_if (void)
+{
+  const char *tests [] =
+    {
+      "if (false) { 10 }"
+      "if (1 > 2) { 10 }"
+    };
+  
+  for (int i = 0; i < sizeof(tests)/sizeof(tests[0]); i++)
+    {
+      struct lexer l = get_lexer(tests[i]);
+      struct parser p = get_parser(&l);
+      struct stmt *s = get_stmt(&p);
+      getfree_errors(&p.elist, 0);
+
+      struct object *o = eval(s);
+      assert(o->type == NULL_OBJ);
+      assert(o == NULL_OBJECT);
+
+      free_obj(o);
+      free_stmt(s);
+      free_parser(&p);
+    }  
+}
 int
 main (void)
 {
   test_int();
   test_bool();
   test_prefix();
+  test_if_expr();
+  test_void_if();
   return 0;
 }

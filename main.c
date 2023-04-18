@@ -15,7 +15,7 @@ read_input (FILE *stream)
       input[size] = ch;
     }
   input[size] = '\0';
-  input = realloc(input, size);
+  //input = realloc(input, size);
 
   return input;
 }
@@ -41,6 +41,7 @@ main (void)
       free(eval);
       free_stmt(s);
       free_parser(&p);
+      free(input);
     }
   return 0;
 }

@@ -22,6 +22,9 @@ struct object
 #define FALSE (&CONSTANT_OBJECTS[0])
 #define NULL_OBJECT (&CONSTANT_OBJECTS[2])
 
+struct object *eval (const struct stmt *);
+struct object *eval_expr (const struct expr *);
+
 const struct object CONSTANT_OBJECTS [] =  
 {
   {BOOL_OBJ, .bool = 0},
@@ -124,6 +127,16 @@ bool_obj_conv (int bool)
   return bool ? TRUE : FALSE;
 }
 
+int
+obj_bool_conv (struct object *cond)
+{
+  if (cond->type == BOOL_OBJ)
+    return cond->bool;
+  if (cond->type == NULL_OBJ)
+    return 0;
+  return 1;
+}
+
 struct object *
 eval_integer_infix (enum token_type op, struct object *left, struct object *right)
 {
@@ -160,7 +173,31 @@ eval_infix_expr (enum token_type op, struct object *left, struct object *right)
   if (op == NOT_EQ)
     return bool_obj_conv(left != right);
   
-  return NULL_OBJ;
+  return NULL_OBJECT;
+}
+
+struct object *
+eval_stmt_list (const struct stmt_list *stmt_list)
+{
+  struct object *obj;
+  obj = eval(stmt_list->list[stmt_list->count - 1]);
+  return obj;
+}
+
+struct object *
+eval_if_expr (const struct expr *node)
+{
+  
+  struct object *cond = eval_expr(node->cond);
+  int then_eval = obj_bool_conv(cond);
+  free_obj(cond);
+  
+  if (then_eval)
+    return eval_stmt_list(node->stmt_lists[THEN]);
+  if (node->stmt_lists[ALT])
+    return eval_stmt_list(node->stmt_lists[ALT]);
+
+  return NULL_OBJECT;
 }
 
 struct object *
@@ -172,6 +209,7 @@ eval_expr (const struct expr *node)
     case BOOL_EXPR: return get_obj(BOOL_OBJ, &node->bool); break;
     case PREFIX_EXPR: return eval_prefix_expr (node->token.type, eval_expr(node->expr[RIGHT])); break;
     case INFIX_EXPR: return eval_infix_expr (node->token.type, eval_expr(node->expr[LEFT]), eval_expr(node->expr[RIGHT])); break;
+    case IF_EXPR: return eval_if_expr(node); break;
     }
 }
 
