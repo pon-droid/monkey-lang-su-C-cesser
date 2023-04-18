@@ -20,6 +20,7 @@ struct object
 
 #define TRUE (&CONSTANT_OBJECTS[1])
 #define FALSE (&CONSTANT_OBJECTS[0])
+#define NULL_OBJECT (&CONSTANT_OBJECTS[2])
 
 const struct object CONSTANT_OBJECTS [] =  
 {
@@ -75,6 +76,8 @@ obj_str (const struct object *obj)
       else
 	return strdup("false");
       break;
+    case NULL_OBJ:
+      return strdup("null");
     }
   return str;
 }
@@ -96,7 +99,7 @@ struct object *
 eval_minus_op (struct object *obj)
 {
   if (obj->type != INT_OBJ)
-    return NULL;
+    return NULL_OBJECT;
   obj->integer *= -1;
   return obj;
 }
@@ -114,6 +117,37 @@ eval_prefix_expr (enum token_type op, struct object *obj)
       return NULL;
     }
 }
+
+struct object *
+eval_integer_infix (enum token_type op, struct object *left, struct object *right)
+{
+  int lval = left->integer;
+  int rval = right->integer;
+
+  free_obj(left);
+  free_obj(right);
+
+  int result;  
+  switch (op)
+    {
+      case PLUS: result = lval + rval; break;
+      case MINUS: result = lval - rval; break;
+      case ASTERISK: result = lval * rval; break;
+      case SLASH: result = lval / rval; break;
+    default:
+      return NULL;
+    }
+  return get_obj(INT_OBJ, &result);
+}
+
+struct object *
+eval_infix_expr (enum token_type op, struct object *left, struct object *right)
+{
+  if (left->type == INT_OBJ && right->type == INT_OBJ)
+    return eval_integer_infix(op, left, right);
+  return NULL_OBJ;
+}
+
 struct object *
 eval_expr (const struct expr *node)
 {
@@ -121,7 +155,8 @@ eval_expr (const struct expr *node)
     {
     case INT_EXPR: return get_obj(INT_OBJ, &node->integer); break;
     case BOOL_EXPR: return get_obj(BOOL_OBJ, &node->bool); break;
-    case PREFIX_EXPR: return eval_prefix_expr (node->token.type, eval_expr(node->expr[RIGHT])); break;      
+    case PREFIX_EXPR: return eval_prefix_expr (node->token.type, eval_expr(node->expr[RIGHT])); break;
+    case INFIX_EXPR: return eval_infix_expr (node->token.type, eval_expr(node->expr[LEFT]), eval_expr(node->expr[RIGHT])); break;
     }
 }
 
