@@ -155,6 +155,11 @@ eval_infix_expr (enum token_type op, struct object *left, struct object *right)
 {
   if (left->type == INT_OBJ && right->type == INT_OBJ)
     return eval_integer_infix(op, left, right);
+  if (op == EQ)
+    return bool_obj_conv(left == right);
+  if (op == NOT_EQ)
+    return bool_obj_conv(left != right);
+  
   return NULL_OBJ;
 }
 

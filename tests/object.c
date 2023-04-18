@@ -98,7 +98,16 @@ test_prefix (void)
       {"1 == 1", 1},
       {"1 != 1", 0},
       {"1 == 2", 0},
-      {"1 != 2", 1},    
+      {"1 != 2", 1},
+      {"true == true", 1},
+      {"false == false", 1},
+      {"true == false", 0},
+      {"true != false", 1},
+      {"false != true", 1},
+      {"(1 < 2) == true", 1},
+      {"(1 < 2) == false", 0},
+      {"(1 > 2) == true", 0},
+      {"(1 > 2) == false", 1},
     };
   
   for (int i = 0; i < sizeof(tests)/sizeof(tests[0]); i++)
