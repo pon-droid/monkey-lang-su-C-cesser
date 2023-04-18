@@ -119,6 +119,12 @@ eval_prefix_expr (enum token_type op, struct object *obj)
 }
 
 struct object *
+bool_obj_conv (int bool)
+{
+  return bool ? TRUE : FALSE;
+}
+
+struct object *
 eval_integer_infix (enum token_type op, struct object *left, struct object *right)
 {
   int lval = left->integer;
@@ -130,10 +136,14 @@ eval_integer_infix (enum token_type op, struct object *left, struct object *righ
   int result;  
   switch (op)
     {
-      case PLUS: result = lval + rval; break;
-      case MINUS: result = lval - rval; break;
-      case ASTERISK: result = lval * rval; break;
-      case SLASH: result = lval / rval; break;
+    case PLUS: result = lval + rval; break;
+    case MINUS: result = lval - rval; break;
+    case ASTERISK: result = lval * rval; break;
+    case SLASH: result = lval / rval; break;
+    case LT: return bool_obj_conv(lval < rval); break;
+    case GT: return bool_obj_conv(lval > rval); break;
+    case EQ: return bool_obj_conv(lval == rval); break;
+    case NOT_EQ: return bool_obj_conv(lval != rval); break;
     default:
       return NULL;
     }

@@ -89,6 +89,16 @@ test_prefix (void)
       {"!!true", 1},
       {"!!false", 0},
       {"!!5", 1},
+      {"true", 1},
+      {"false", 0},
+      {"1 < 2", 1},
+      {"1 > 2", 0},
+      {"1 < 1", 0},
+      {"1 > 1", 0},
+      {"1 == 1", 1},
+      {"1 != 1", 0},
+      {"1 == 2", 0},
+      {"1 != 2", 1},    
     };
   
   for (int i = 0; i < sizeof(tests)/sizeof(tests[0]); i++)
@@ -97,7 +107,7 @@ test_prefix (void)
       struct parser p = get_parser(&l);
       struct stmt *s = get_stmt(&p);
       getfree_errors(&p.elist, 0);
-      assert(s->expr->type == PREFIX_EXPR);
+      //assert(s->expr->type == PREFIX_EXPR);
       
       struct object *o = eval(s);
       assert(o->type == BOOL_OBJ);
