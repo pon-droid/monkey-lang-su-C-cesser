@@ -102,6 +102,7 @@ cpy_token (struct token *dest, struct token *src)
 void
 free_token (struct token *t)
 {
+  //  if (t->literal)
   free(t->literal);
   free(t);
 }
@@ -209,8 +210,11 @@ struct token *
 next_tok (struct lexer *l)
 {
   struct token *t;
+  if (!l->input[l->pos])
+    return new_token(END_FILE, strdup(""));
+      
   char ch = l->input[l->pos++];
-
+  
   while (ch == ' ' || ch == '\t' || ch == '\n' || ch == '\r')
     ch = l->input[l->pos++];
   
@@ -253,7 +257,7 @@ next_tok (struct lexer *l)
       else if (is_123(&ch))
 	t = get_ident(l, &is_123);
       else
-	t = new_token(ILLEGAL, &ch);
+	t = new_token(ILLEGAL, strdup("ILLEGAL"));
     }
   return t;
 }

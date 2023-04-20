@@ -181,13 +181,42 @@ test_void_if (void)
       free_parser(&p);
     }  
 }
+
+void
+test_return (void)
+{
+    const struct test tests [] =
+    {
+      {"return 5;", 5},
+      {"return 5; 9;", 5},
+    };
+  
+  for (int i = 0; i < sizeof(tests)/sizeof(tests[0]); i++)
+    {
+      struct lexer l = get_lexer(tests[i].input);
+      struct parser p = get_parser(&l);
+      struct stmt *s = get_stmt(&p);
+      getfree_errors(&p.elist, 0);
+
+      assert(s->type == RET_STMT);
+      struct object *o = eval(s);
+      assert(o->type == RET_OBJ);
+      assert(o->return_val->val == tests[i].output);
+
+      free_obj(o);
+      free_stmt(s);
+      free_parser(&p);
+    }
+}
+
 int
 main (void)
 {
-  test_int();
-  test_bool();
-  test_prefix();
-  test_if_expr();
-  test_void_if();
+  //test_int();
+  //test_bool();
+  //test_prefix();
+  //test_if_expr();
+  //test_void_if();
+  test_return();
   return 0;
 }

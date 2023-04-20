@@ -6,6 +6,15 @@ enum obj_type
   INT_OBJ,
   BOOL_OBJ,
   NULL_OBJ,
+  RET_OBJ,
+};
+
+char const *obj_type_str[] =
+{
+  "INT_OBJ",
+  "BOOL_OBJ",
+  "NULL_OBJ",
+  "RET_OBJ",
 };
 
 struct object
@@ -15,12 +24,13 @@ struct object
   {
     int integer;
     int bool;
+    struct object *return_val;
   };
 };
 
-#define TRUE (&CONSTANT_OBJECTS[1])
-#define FALSE (&CONSTANT_OBJECTS[0])
-#define NULL_OBJECT (&CONSTANT_OBJECTS[2])
+#define TRUE ((struct object *)(&CONSTANT_OBJECTS[1]))
+#define FALSE ((struct object *)(&CONSTANT_OBJECTS[0]))
+#define NULL_OBJECT ((struct object *)(&CONSTANT_OBJECTS[2]))
 
 struct object *eval (const struct stmt *);
 struct object *eval_expr (const struct expr *);
@@ -56,10 +66,12 @@ get_obj (enum obj_type type, const void *val)
 void
 free_obj (struct object *obj)
 {
-  if (obj->type != BOOL_OBJ && obj->type != NULL_OBJ)
-    {
-      free(obj);
-    }
+  if (obj->type == BOOL_OBJ || obj->type == NULL_OBJ)
+    return;
+
+  if (obj->type == RET_OBJ)
+    free(obj->return_val);
+  free(obj);
 }
 
 char *
@@ -81,6 +93,10 @@ obj_str (const struct object *obj)
       break;
     case NULL_OBJ:
       return strdup("null");
+      break;
+    case RET_OBJ:
+      return obj_str(obj->return_val);
+      break;
     }
   return str;
 }
@@ -179,15 +195,18 @@ eval_infix_expr (enum token_type op, struct object *left, struct object *right)
 struct object *
 eval_stmt_list (const struct stmt_list *stmt_list)
 {
-  struct object *obj;
-  obj = eval(stmt_list->list[stmt_list->count - 1]);
-  return obj;
+  for (int i = 0; i < stmt_list->count; i++)
+    {
+      if (stmt_list->list[i]->type == RET_STMT)
+	return get_obj(RET_OBJ, eval_expr(stmt_list->list[i]->expr));
+    }
+  //obj = eval(stmt_list->list[stmt_list->count - 1]);
+  return eval(stmt_list->list[stmt_list->count - 1]);
 }
 
 struct object *
 eval_if_expr (const struct expr *node)
 {
-  
   struct object *cond = eval_expr(node->cond);
   int then_eval = obj_bool_conv(cond);
   free_obj(cond);
@@ -220,5 +239,7 @@ eval (const struct stmt *node)
     {
     case EXPR_STMT:
       return eval_expr(node->expr);
+    case RET_STMT:
+      return get_obj(RET_OBJ, eval_expr(node->expr));
     }
 }

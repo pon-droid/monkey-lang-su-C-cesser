@@ -637,3 +637,28 @@ getfree_errors (struct enode **elist, int ignore)
     }
 }
   
+struct stmt_list *
+parse_program (const char *input)
+{
+  struct lexer l = get_lexer(input);
+  struct parser p = get_parser(&l);
+
+  
+  struct stmt_list *program = malloc(sizeof(struct stmt_list));
+  program->count = 0;
+  program->size = 2;
+  program->list = malloc(program->size * sizeof(struct stmt*));
+  program->token = *p.cur_tok;
+
+  while (p.cur_tok->type != END_FILE)
+    {
+      struct stmt *s = get_stmt(&p);
+      if (s)
+	append_stmt_list(program, s);
+      cycle_token(&p);
+    }
+  getfree_errors(&p.elist, 0);
+  free_parser(&p);
+
+  return program;
+}
