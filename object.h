@@ -59,18 +59,21 @@ get_obj (enum obj_type type, const void *val)
       else
 	return TRUE;
       break;
+    case RET_OBJ:
+      obj->return_val = (struct object *)val;
+      break;
     }
   return obj;
 }
 
 void
 free_obj (struct object *obj)
-{
-  if (obj->type == BOOL_OBJ || obj->type == NULL_OBJ)
+{ 
+  if (obj->type == BOOL_OBJ || obj == NULL_OBJECT)
     return;
 
   if (obj->type == RET_OBJ)
-    free(obj->return_val);
+    free_obj(obj->return_val);
   free(obj);
 }
 
@@ -195,13 +198,21 @@ eval_infix_expr (enum token_type op, struct object *left, struct object *right)
 struct object *
 eval_stmt_list (const struct stmt_list *stmt_list)
 {
+  struct object *obj = NULL;
   for (int i = 0; i < stmt_list->count; i++)
     {
-      if (stmt_list->list[i]->type == RET_STMT)
-	return get_obj(RET_OBJ, eval_expr(stmt_list->list[i]->expr));
+      if (obj)
+	free_obj(obj);
+      obj = eval(stmt_list->list[i]);
+
+      if (obj->type == RET_OBJ)
+	{
+	  struct object *val = obj->return_val;
+	  free(obj);
+	  return val;
+	}
     }
-  //obj = eval(stmt_list->list[stmt_list->count - 1]);
-  return eval(stmt_list->list[stmt_list->count - 1]);
+  return obj;
 }
 
 struct object *
@@ -230,6 +241,7 @@ eval_expr (const struct expr *node)
     case INFIX_EXPR: return eval_infix_expr (node->token.type, eval_expr(node->expr[LEFT]), eval_expr(node->expr[RIGHT])); break;
     case IF_EXPR: return eval_if_expr(node); break;
     }
+  return NULL_OBJECT;
 }
 
 struct object *
@@ -242,4 +254,5 @@ eval (const struct stmt *node)
     case RET_STMT:
       return get_obj(RET_OBJ, eval_expr(node->expr));
     }
+  return NULL_OBJECT;
 }

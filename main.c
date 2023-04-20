@@ -1,5 +1,6 @@
 #include "object.h"
 
+
 //TODO: add GNU readline
 char *
 read_input (FILE *stream)
@@ -25,14 +26,12 @@ int
 main (void)
 {
   while (1)
-    {
-      //const char *input = "if (!10) { 5 }";
-      
+    {  
       printf("\ninput>: ");
       char *input = read_input(stdin);
       struct stmt_list *program = parse_program(input);
       struct object *o = eval_stmt_list(program);
-      if (o != NULL)
+      if (o)
 	{
 	  char *eval = obj_str(o);
 	  printf("%s", eval);
@@ -41,24 +40,6 @@ main (void)
 	}
       free_stmt_list(program);
       free(input);
-      //free(input);
-      
-      /*
-      struct lexer l = get_lexer(input);
-      struct parser p = get_parser(&l);
-
-      struct stmt *s = get_stmt(&p);
-      getfree_errors(&p.elist, 0);
-      struct object *o = eval(s);
-      char *eval = obj_str(o);
-      printf("%s", eval);
-      
-      free_obj(o);
-      free(eval);
-      free_stmt(s);
-      free_parser(&p);
-      free(input);
-      */
     }
   return 0;
 }

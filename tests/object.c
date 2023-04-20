@@ -187,36 +187,30 @@ test_return (void)
 {
     const struct test tests [] =
     {
-      {"return 5;", 5},
-      {"return 5; 9;", 5},
+      {"return 10;", 10},
+      {"return 10; 9;", 10},
+      {"return 2 * 5; 9;", 10},
+      {"9; return 2 * 5; 9;", 10},
     };
   
   for (int i = 0; i < sizeof(tests)/sizeof(tests[0]); i++)
     {
-      struct lexer l = get_lexer(tests[i].input);
-      struct parser p = get_parser(&l);
-      struct stmt *s = get_stmt(&p);
-      getfree_errors(&p.elist, 0);
-
-      assert(s->type == RET_STMT);
-      struct object *o = eval(s);
-      assert(o->type == RET_OBJ);
-      assert(o->return_val->val == tests[i].output);
-
+      struct stmt_list *program = parse_program(tests[i].input);
+      struct object *o = eval_stmt_list(program);
+      assert(o->integer == 10);
       free_obj(o);
-      free_stmt(s);
-      free_parser(&p);
+      free_stmt_list(program);
     }
 }
 
 int
 main (void)
 {
-  //test_int();
-  //test_bool();
-  //test_prefix();
-  //test_if_expr();
-  //test_void_if();
+  test_int();
+  test_bool();
+  test_prefix();
+  test_if_expr();
+  test_void_if();
   test_return();
   return 0;
 }
