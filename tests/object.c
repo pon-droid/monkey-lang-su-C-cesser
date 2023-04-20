@@ -203,6 +203,24 @@ test_return (void)
     }
 }
 
+void
+test_return_if (void)
+{
+  const char *input =
+    "if (10 > 1) {"
+    "if (10 > 1) {"
+    "return 10;"
+    "}"
+    "return 1;"
+    "}";
+
+  struct stmt_list *program = parse_program(input);
+  struct object *o = eval_stmt_list(program);
+  assert(o->integer == 10);
+  free_obj(o);
+  free_stmt_list(program);
+}
+
 int
 main (void)
 {
@@ -212,5 +230,6 @@ main (void)
   test_if_expr();
   test_void_if();
   test_return();
+  test_return_if();
   return 0;
 }

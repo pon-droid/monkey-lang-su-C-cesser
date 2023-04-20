@@ -216,6 +216,23 @@ eval_stmt_list (const struct stmt_list *stmt_list)
 }
 
 struct object *
+eval_body (const struct stmt_list *stmt_list)
+{
+  struct object *obj = NULL;
+  for (int i = 0; i < stmt_list->count; i++)
+    {
+      if (obj)
+	free_obj(obj);
+      obj = eval(stmt_list->list[i]);
+
+      if (obj && obj->type == RET_OBJ)
+	return obj;
+    }
+  
+  return obj;
+}
+      
+struct object *
 eval_if_expr (const struct expr *node)
 {
   struct object *cond = eval_expr(node->cond);
@@ -223,9 +240,9 @@ eval_if_expr (const struct expr *node)
   free_obj(cond);
   
   if (then_eval)
-    return eval_stmt_list(node->stmt_lists[THEN]);
+    return eval_body(node->stmt_lists[THEN]);
   if (node->stmt_lists[ALT])
-    return eval_stmt_list(node->stmt_lists[ALT]);
+    return eval_body(node->stmt_lists[ALT]);
 
   return NULL_OBJECT;
 }
