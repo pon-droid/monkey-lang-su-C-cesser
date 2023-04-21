@@ -1,5 +1,6 @@
 #pragma once
 #include "parser.h"
+#include <stdarg.h>
 
 enum obj_type
 {
@@ -7,14 +8,16 @@ enum obj_type
   BOOL_OBJ,
   NULL_OBJ,
   RET_OBJ,
+  ERR_OBJ,
 };
 
 char const *obj_type_str[] =
 {
-  "INT_OBJ",
-  "BOOL_OBJ",
-  "NULL_OBJ",
-  "RET_OBJ",
+  "INTEGER",
+  "BOOLEAN",
+  "NULL",
+  "RETURN",
+  "ERROR",
 };
 
 struct object
@@ -25,6 +28,7 @@ struct object
     int integer;
     int bool;
     struct object *return_val;
+    char* err;
   };
 };
 
@@ -45,7 +49,7 @@ const struct object CONSTANT_OBJECTS [] =
 struct object *
 get_obj (enum obj_type type, const void *val)
 {
-  struct object *obj = malloc(sizeof(struct object));
+  struct object *obj = malloc(sizeof(struct object)); 
   obj->type = type;
   switch (type)
     {
@@ -66,6 +70,22 @@ get_obj (enum obj_type type, const void *val)
   return obj;
 }
 
+struct object *
+get_err_obj (const char *fmsg, ...)
+{
+  struct object *obj = malloc(sizeof(struct object)); 
+  obj->type = ERR_OBJ;
+  obj->err = malloc(50 * sizeof(*fmsg)); 
+
+  va_list args;
+  va_start(args, fmsg);
+  vsnprintf(obj->err, 50 * sizeof(*fmsg), fmsg, args);//TODO: copy INT_OBJ conversion method for getting length of string
+  va_end(args);
+
+  obj->err = realloc(obj->err, (strlen(obj->err) + 1) * sizeof(obj->err));
+  return obj;
+}
+
 void
 free_obj (struct object *obj)
 { 
@@ -74,13 +94,17 @@ free_obj (struct object *obj)
 
   if (obj->type == RET_OBJ)
     free_obj(obj->return_val);
+
+  if (obj->type == ERR_OBJ)
+    free(obj->err);
+  
   free(obj);
 }
 
 char *
 obj_str (const struct object *obj)
 {
-  char *str;
+  char *str = NULL;
   switch (obj->type)
     {
     case INT_OBJ:;
@@ -89,7 +113,7 @@ obj_str (const struct object *obj)
       snprintf(str, len + 1, "%d", obj->integer);
       break;
     case BOOL_OBJ:
-      if (obj->bool)
+      if (obj->bool) 
 	return strdup("true");
       else
 	return strdup("false");
@@ -99,6 +123,9 @@ obj_str (const struct object *obj)
       break;
     case RET_OBJ:
       return obj_str(obj->return_val);
+      break;
+    case ERR_OBJ:
+      return strdup(obj->err);
       break;
     }
   return str;
@@ -121,7 +148,7 @@ struct object *
 eval_minus_op (struct object *obj)
 {
   if (obj->type != INT_OBJ)
-    return NULL_OBJECT;
+    return get_err_obj("unknown operator: -%s", obj_type_str[obj->type]);
   obj->integer *= -1;
   return obj;
 }
@@ -136,7 +163,7 @@ eval_prefix_expr (enum token_type op, struct object *obj)
     case MINUS:
       return eval_minus_op(obj);
     default:
-      return NULL;
+      return get_err_obj("unknown operator: %s%s", toktype_str[op], obj_type_str[obj->type]);
     }
 }
 
@@ -177,7 +204,7 @@ eval_integer_infix (enum token_type op, struct object *left, struct object *righ
     case EQ: return bool_obj_conv(lval == rval); break;
     case NOT_EQ: return bool_obj_conv(lval != rval); break;
     default:
-      return NULL;
+	return get_err_obj("unknown operator: %s %s %s", obj_type_str[left->type], toktype_str[op], obj_type_str[right->type]);
     }
   return get_obj(INT_OBJ, &result);
 }
@@ -187,12 +214,20 @@ eval_infix_expr (enum token_type op, struct object *left, struct object *right)
 {
   if (left->type == INT_OBJ && right->type == INT_OBJ)
     return eval_integer_infix(op, left, right);
+  else if (left->type != right->type)
+    {
+      enum obj_type left_t = left->type;
+      enum obj_type right_t = right->type;
+      free_obj(left);
+      free_obj(right);
+      return get_err_obj("type mismatch: %s %s %s", obj_type_str[left_t], toktype_str[op], obj_type_str[right_t]);
+    }
   if (op == EQ)
     return bool_obj_conv(left == right);
   if (op == NOT_EQ)
     return bool_obj_conv(left != right);
   
-  return NULL_OBJECT;
+  return get_err_obj("unknown operator: %s %s %s", obj_type_str[left->type], toktype_str[op], obj_type_str[right->type]);
 }
 
 struct object *
@@ -211,6 +246,8 @@ eval_stmt_list (const struct stmt_list *stmt_list)
 	  free(obj);
 	  return val;
 	}
+      else if (obj->type == ERR_OBJ)
+	return obj;
     }
   return obj;
 }
@@ -225,7 +262,7 @@ eval_body (const struct stmt_list *stmt_list)
 	free_obj(obj);
       obj = eval(stmt_list->list[i]);
 
-      if (obj && obj->type == RET_OBJ)
+      if (obj && (obj->type == RET_OBJ || obj->type == ERR_OBJ))
 	return obj;
     }
   

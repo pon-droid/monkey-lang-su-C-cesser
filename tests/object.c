@@ -221,6 +221,63 @@ test_return_if (void)
   free_stmt_list(program);
 }
 
+struct str_test
+{
+  const char *input;
+  const char *output;
+};
+
+void
+test_err (void)
+{
+  const struct str_test tests [] =
+    {
+      {
+	"5 + true;",
+	"type mismatch: INTEGER + BOOLEAN",
+      },
+      {
+	"5 + true; 5;",
+	"type mismatch: INTEGER + BOOLEAN",
+      },
+      {
+	"-true",
+	"unknown operator: -BOOLEAN",
+      },
+      {
+	"true + false;",
+	"unknown operator: BOOLEAN + BOOLEAN",
+      },
+      {
+	"5; true + false; 5",
+	"unknown operator: BOOLEAN + BOOLEAN",
+      },
+      {
+	"if (10 > 1) { true + false; }",
+	"unknown operator: BOOLEAN + BOOLEAN",
+      },
+      {
+	"if (10 > 1) {"
+	"if (10 > 1) {"
+	"return true + false;"
+	"}"
+	"return 1;"
+	"}",
+	"unknown operator: BOOLEAN + BOOLEAN",
+      }
+    };
+
+  for (int i = 0; i < sizeof(tests)/sizeof(tests[0]); i++)
+    {
+      struct stmt_list *program = parse_program(tests[i].input);
+      struct object *o = eval_stmt_list(program);
+      assert(o->type == ERR_OBJ);
+      assert(strcmp(o->err, tests[i].output) == 0);
+      free_obj(o);
+      free_stmt_list(program);
+    }
+}
+
 int
 main (void)
 {
@@ -231,5 +288,6 @@ main (void)
   test_void_if();
   test_return();
   test_return_if();
+  test_err();
   return 0;
 }
