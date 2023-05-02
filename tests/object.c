@@ -10,7 +10,7 @@ struct test
 void
 test_int (void)
 {
-    struct test tests [] =
+  struct test tests [] =
     {
       {"5", 5},
       {"10", 10},

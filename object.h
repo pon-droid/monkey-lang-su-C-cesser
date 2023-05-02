@@ -49,23 +49,29 @@ const struct object CONSTANT_OBJECTS [] =
 struct object *
 get_obj (enum obj_type type, const void *val)
 {
-  struct object *obj = malloc(sizeof(struct object)); 
-  obj->type = type;
-  switch (type)
+  if (type == BOOL_OBJ)
     {
-    case INT_OBJ:
-      obj->integer = *(int *)val;
-      break;
-    case BOOL_OBJ:
-      free(obj);
       if (*(int *)val == 0)
 	return FALSE;
       else
 	return TRUE;
+    }
+  
+  struct object *obj = malloc(sizeof(struct object));
+  obj->type = type;
+  switch (obj->type)
+    {
+    case INT_OBJ:
+      obj->integer = *(int *)val;
       break;
     case RET_OBJ:
       obj->return_val = (struct object *)val;
       break;
+    default:;
+      obj->type = ERR_OBJ;
+      int len = snprintf(NULL, 0, "Couldn't create object of type %s", obj_type_str[type]);
+      char *str = malloc(len + 1);
+      snprintf(str, len + 1, "Couldn't create object of type %s", obj_type_str[type]);      
     }
   return obj;
 }
@@ -75,14 +81,19 @@ get_err_obj (const char *fmsg, ...)
 {
   struct object *obj = malloc(sizeof(struct object)); 
   obj->type = ERR_OBJ;
-  obj->err = malloc(50 * sizeof(*fmsg)); 
-
+  
   va_list args;
+  va_list tmp_args;
   va_start(args, fmsg);
-  vsnprintf(obj->err, 50 * sizeof(*fmsg), fmsg, args);//TODO: copy INT_OBJ conversion method for getting length of string
+  va_copy(tmp_args, args);
+  
+  int len = vsnprintf(NULL, 0, fmsg, tmp_args);
+  obj->err = malloc(len + 1);
+  vsnprintf(obj->err, len + 1, fmsg, args);
+  
   va_end(args);
-
-  obj->err = realloc(obj->err, (strlen(obj->err) + 1) * sizeof(obj->err));
+  va_end(tmp_args);
+  
   return obj;
 }
 
@@ -97,6 +108,7 @@ free_obj (struct object *obj)
 
   if (obj->type == ERR_OBJ)
     free(obj->err);
+
   
   free(obj);
 }
@@ -204,7 +216,7 @@ eval_integer_infix (enum token_type op, struct object *left, struct object *righ
     case EQ: return bool_obj_conv(lval == rval); break;
     case NOT_EQ: return bool_obj_conv(lval != rval); break;
     default:
-	return get_err_obj("unknown operator: %s %s %s", obj_type_str[left->type], toktype_str[op], obj_type_str[right->type]);
+      return get_err_obj("unknown operator: %s %s %s", obj_type_str[left->type], toktype_str[op], obj_type_str[right->type]);
     }
   return get_obj(INT_OBJ, &result);
 }
@@ -216,11 +228,10 @@ eval_infix_expr (enum token_type op, struct object *left, struct object *right)
     return eval_integer_infix(op, left, right);
   else if (left->type != right->type)
     {
-      enum obj_type left_t = left->type;
-      enum obj_type right_t = right->type;
+      struct object *err = get_err_obj("type mismatch: %s %s %s", obj_type_str[left->type], toktype_str[op], obj_type_str[right->type]);
       free_obj(left);
       free_obj(right);
-      return get_err_obj("type mismatch: %s %s %s", obj_type_str[left_t], toktype_str[op], obj_type_str[right_t]);
+      return err;
     }
   if (op == EQ)
     return bool_obj_conv(left == right);
@@ -291,11 +302,31 @@ eval_expr (const struct expr *node)
     {
     case INT_EXPR: return get_obj(INT_OBJ, &node->integer); break;
     case BOOL_EXPR: return get_obj(BOOL_OBJ, &node->bool); break;
-    case PREFIX_EXPR: return eval_prefix_expr (node->token.type, eval_expr(node->expr[RIGHT])); break;
-    case INFIX_EXPR: return eval_infix_expr (node->token.type, eval_expr(node->expr[LEFT]), eval_expr(node->expr[RIGHT])); break;
+    case PREFIX_EXPR:
+      {      
+	struct object *right = eval_expr(node->expr[RIGHT]);
+	if (right->type == ERR_OBJ)
+	  return right;
+	return eval_prefix_expr (node->token.type, right);
+      }
+      break;
+    case INFIX_EXPR:
+      {
+	struct object *left = eval_expr(node->expr[LEFT]);
+
+	if (left->type == ERR_OBJ)
+	  return left;	
+	struct object *right = eval_expr(node->expr[RIGHT]);
+
+	if (right->type == ERR_OBJ)
+	  return right;
+	return eval_infix_expr (node->token.type, left, right);
+      }
+      break;
     case IF_EXPR: return eval_if_expr(node); break;
+    default:
+      return NULL_OBJECT;
     }
-  return NULL_OBJECT;
 }
 
 struct object *
@@ -307,6 +338,7 @@ eval (const struct stmt *node)
       return eval_expr(node->expr);
     case RET_STMT:
       return get_obj(RET_OBJ, eval_expr(node->expr));
+    default:
+      return NULL_OBJECT;
     }
-  return NULL_OBJECT;
 }
