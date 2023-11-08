@@ -21,6 +21,13 @@ get_list (int typesize)
 }
 
 void
+shrink_to_size (struct list *l, int size)
+{
+  l->list = realloc(l->list, l->typesize * size);
+  l->size = size;
+}
+
+void
 append_list (struct list *l, void *x)
 {
   if ((l->count + 1) >= l->size)

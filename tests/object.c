@@ -41,8 +41,9 @@ test_int (void)
       getfree_errors(&p.elist, 0);
 
       //assert(s->expr->type == INT_EXPR);
-      
-      struct object *o = eval(s);
+      struct enviro *env = get_enviro();
+      struct object *o = eval(s, env);
+      free_enviro(env);
       assert(o->type == INT_OBJ);
       assert(o->integer == tests[i].output);
       
@@ -67,8 +68,9 @@ test_bool (void)
       struct parser p = get_parser(&l);
       struct stmt *s = get_stmt(&p);
       getfree_errors(&p.elist, 0);
-
-      struct object *o = eval(s);
+      struct enviro *env = get_enviro();
+      struct object *o = eval(s, env);
+      free_enviro(env);
       assert(o->type == BOOL_OBJ);
       assert(o->bool == tests[i].output);
 
@@ -117,8 +119,9 @@ test_prefix (void)
       struct stmt *s = get_stmt(&p);
       getfree_errors(&p.elist, 0);
       //assert(s->expr->type == PREFIX_EXPR);
-      
-      struct object *o = eval(s);
+      struct enviro *env = get_enviro();
+      struct object *o = eval(s, env);
+      free_enviro(env);
       assert(o->type == BOOL_OBJ);
       assert(o->bool == tests[i].output);
 
@@ -146,8 +149,9 @@ test_if_expr (void)
       struct parser p = get_parser(&l);
       struct stmt *s = get_stmt(&p);
       getfree_errors(&p.elist, 0);
-
-      struct object *o = eval(s);
+      struct enviro *env = get_enviro();
+      struct object *o = eval(s, env);
+      free_enviro(env);
       assert(o->integer == tests[i].output);
 
       free_obj(o);
@@ -171,8 +175,9 @@ test_void_if (void)
       struct parser p = get_parser(&l);
       struct stmt *s = get_stmt(&p);
       getfree_errors(&p.elist, 0);
-
-      struct object *o = eval(s);
+      struct enviro *env = get_enviro();
+      struct object *o = eval(s, env);
+      free_enviro(env);
       assert(o->type == NULL_OBJ);
       assert(o == NULL_OBJECT);
 
@@ -196,7 +201,9 @@ test_return (void)
   for (int i = 0; i < sizeof(tests)/sizeof(tests[0]); i++)
     {
       struct stmt_list *program = parse_program(tests[i].input);
-      struct object *o = eval_stmt_list(program);
+      struct enviro *env = get_enviro();
+      struct object *o = eval_stmt_list(program, env);
+      free_enviro(env);
       assert(o->integer == 10);
       free_obj(o);
       free_stmt_list(program);
@@ -215,7 +222,9 @@ test_return_if (void)
     "}";
 
   struct stmt_list *program = parse_program(input);
-  struct object *o = eval_stmt_list(program);
+  struct enviro *env = get_enviro();
+  struct object *o = eval_stmt_list(program, env);
+  free_enviro(env);
   assert(o->integer == 10);
   free_obj(o);
   free_stmt_list(program);
@@ -270,13 +279,37 @@ test_err (void)
   for (int i = 0; i < sizeof(tests)/sizeof(tests[0]); i++)
     {
       struct stmt_list *program = parse_program(tests[i].input);
-      struct object *o = eval_stmt_list(program);
+      struct enviro *env = get_enviro();
+      struct object *o = eval_stmt_list(program, env);
+      free_enviro(env);
       assert(o->type == ERR_OBJ);
       assert(strcmp(o->err, tests[i].output) == 0);
       free_obj(o);
       free_stmt_list(program);
     }
 }
+/*
+void
+test_bindings (void)
+{
+  struct str_int_cmp
+  {
+    const char *input;
+    int output;
+  };
+
+  struct str_int_cmp tests [] =
+    {
+      {"let a = 5; a;", 5},
+      {"let a = 5 * 5; a;", 25},
+      {"let a = 5; let b = a; b;", 5},
+      {"let a = 5; let b = a; let c = a + b + 5; c;", 15},
+    };
+  struct enviro *env = get_enviro();
+  for (int i = 0; i < sizeof(tests)/sizeof(tests[0]); i++)
+    {
+*/
+  
 
 int
 main (void)

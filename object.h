@@ -1,5 +1,6 @@
 #pragma once
 #include "parser.h"
+#include "enviro.h"
 #include <stdarg.h>
 
 enum obj_type
@@ -36,8 +37,8 @@ struct object
 #define FALSE ((struct object *)(&CONSTANT_OBJECTS[0]))
 #define NULL_OBJECT ((struct object *)(&CONSTANT_OBJECTS[2]))
 
-struct object *eval (const struct stmt *);
-struct object *eval_expr (const struct expr *);
+struct object *eval (const struct stmt *, struct enviro *);
+struct object *eval_expr (const struct expr *, struct enviro *);
 
 const struct object CONSTANT_OBJECTS [] =  
 {
@@ -222,7 +223,7 @@ eval_integer_infix (enum token_type op, struct object *left, struct object *righ
 }
 
 struct object *
-eval_infix_expr (enum token_type op, struct object *left, struct object *right)
+eval_infix_expr (enum token_type op, struct object *left, struct object *right, struct enviro *env)
 {
   if (left->type == INT_OBJ && right->type == INT_OBJ)
     return eval_integer_infix(op, left, right);
@@ -242,14 +243,14 @@ eval_infix_expr (enum token_type op, struct object *left, struct object *right)
 }
 
 struct object *
-eval_stmt_list (const struct stmt_list *stmt_list)
+eval_stmt_list (const struct stmt_list *stmt_list, struct enviro *env)
 {
   struct object *obj = NULL;
   for (int i = 0; i < stmt_list->count; i++)
     {
       if (obj)
 	free_obj(obj);
-      obj = eval(stmt_list->list[i]);
+      obj = eval(stmt_list->list[i], env);
 
       if (obj->type == RET_OBJ)
 	{
@@ -264,14 +265,14 @@ eval_stmt_list (const struct stmt_list *stmt_list)
 }
 
 struct object *
-eval_body (const struct stmt_list *stmt_list)
+eval_body (const struct stmt_list *stmt_list, struct enviro *env)
 {
   struct object *obj = NULL;
   for (int i = 0; i < stmt_list->count; i++)
     {
       if (obj)
 	free_obj(obj);
-      obj = eval(stmt_list->list[i]);
+      obj = eval(stmt_list->list[i], env);
 
       if (obj && (obj->type == RET_OBJ || obj->type == ERR_OBJ))
 	return obj;
@@ -281,22 +282,22 @@ eval_body (const struct stmt_list *stmt_list)
 }
       
 struct object *
-eval_if_expr (const struct expr *node)
+eval_if_expr (const struct expr *node, struct enviro *env)
 {
-  struct object *cond = eval_expr(node->cond);
+  struct object *cond = eval_expr(node->cond, env);
   int then_eval = obj_bool_conv(cond);
   free_obj(cond);
   
   if (then_eval)
-    return eval_body(node->stmt_lists[THEN]);
+    return eval_body(node->stmt_lists[THEN], env);
   if (node->stmt_lists[ALT])
-    return eval_body(node->stmt_lists[ALT]);
+    return eval_body(node->stmt_lists[ALT], env);
 
   return NULL_OBJECT;
 }
 
 struct object *
-eval_expr (const struct expr *node)
+eval_expr (const struct expr *node, struct enviro *env)
 {
   switch (node->type)
     {
@@ -304,7 +305,7 @@ eval_expr (const struct expr *node)
     case BOOL_EXPR: return get_obj(BOOL_OBJ, &node->bool); break;
     case PREFIX_EXPR:
       {      
-	struct object *right = eval_expr(node->expr[RIGHT]);
+	struct object *right = eval_expr(node->expr[RIGHT], env);
 	if (right->type == ERR_OBJ)
 	  return right;
 	return eval_prefix_expr (node->token.type, right);
@@ -312,32 +313,32 @@ eval_expr (const struct expr *node)
       break;
     case INFIX_EXPR:
       {
-	struct object *left = eval_expr(node->expr[LEFT]);
+	struct object *left = eval_expr(node->expr[LEFT], env);
 
 	if (left->type == ERR_OBJ)
 	  return left;	
-	struct object *right = eval_expr(node->expr[RIGHT]);
+	struct object *right = eval_expr(node->expr[RIGHT], env);
 
 	if (right->type == ERR_OBJ)
 	  return right;
-	return eval_infix_expr (node->token.type, left, right);
+	return eval_infix_expr (node->token.type, left, right, env);
       }
       break;
-    case IF_EXPR: return eval_if_expr(node); break;
+    case IF_EXPR: return eval_if_expr(node, env); break;
     default:
       return NULL_OBJECT;
     }
 }
 
 struct object *
-eval (const struct stmt *node)
+eval (const struct stmt *node, struct enviro *env)
 {
   switch (node->type)
     {
     case EXPR_STMT:
-      return eval_expr(node->expr);
+      return eval_expr(node->expr, env);
     case RET_STMT:
-      return get_obj(RET_OBJ, eval_expr(node->expr));
+      return get_obj(RET_OBJ, eval_expr(node->expr, env));
     default:
       return NULL_OBJECT;
     }
