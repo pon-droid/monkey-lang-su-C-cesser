@@ -273,6 +273,10 @@ test_err (void)
 	"return 1;"
 	"}",
 	"unknown operator: BOOLEAN + BOOLEAN",
+      },
+      {
+	"foobar",
+	"identifier not found: foobar",
       }
     };
 
@@ -288,7 +292,7 @@ test_err (void)
       free_stmt_list(program);
     }
 }
-/*
+
 void
 test_bindings (void)
 {
@@ -305,15 +309,26 @@ test_bindings (void)
       {"let a = 5; let b = a; b;", 5},
       {"let a = 5; let b = a; let c = a + b + 5; c;", 15},
     };
+  
   struct enviro *env = get_enviro();
   for (int i = 0; i < sizeof(tests)/sizeof(tests[0]); i++)
     {
-*/
+      struct stmt_list *program = parse_program(tests[i].input);
+      struct object *o = eval_stmt_list(program, env);
+      assert(o->type == INT_OBJ);
+      assert(o->integer == tests[i].output);
+      free_obj(o);
+      free_stmt_list(program);
+      printf("%d\n", i);
+    }
+
+  free_enviro(env);
+}
   
 
 int
 main (void)
-{
+{/*
   test_int();
   test_bool();
   test_prefix();
@@ -322,5 +337,7 @@ main (void)
   test_return();
   test_return_if();
   test_err();
+ */
+  test_bindings();
   return 0;
 }

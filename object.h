@@ -248,10 +248,11 @@ eval_stmt_list (const struct stmt_list *stmt_list, struct enviro *env)
   struct object *obj = NULL;
   for (int i = 0; i < stmt_list->count; i++)
     {
+      printf("typed: %d\n", stmt_list->list[i]->expr->type);
       if (obj)
 	free_obj(obj);
       obj = eval(stmt_list->list[i], env);
-
+      printf("%s\n", obj_type_str[obj->type]);
       if (obj->type == RET_OBJ)
 	{
 	  struct object *val = obj->return_val;
@@ -325,6 +326,17 @@ eval_expr (const struct expr *node, struct enviro *env)
       }
       break;
     case IF_EXPR: return eval_if_expr(node, env); break;
+    case IDENT_EXPR:
+      {
+	printf("ident_expr\n");
+	printf("ident expr %s\n", node->ident);
+	struct object *val = shmap_k(env, node->ident);
+	if (!val)
+	  return get_err_obj("identifier not found: %s", node->ident);
+
+	return val;
+      }
+      break;
     default:
       return NULL_OBJECT;
     }
@@ -339,6 +351,18 @@ eval (const struct stmt *node, struct enviro *env)
       return eval_expr(node->expr, env);
     case RET_STMT:
       return get_obj(RET_OBJ, eval_expr(node->expr, env));
+    case LET_STMT:
+      {
+	struct object *e = eval_expr(node->expr, env);
+	
+	if (e->type == ERR_OBJ)
+	  return e;
+	printf("%s\n", node->ident.literal);
+	shmap_k(env, node->ident.literal) = e;
+	printf("work\n");	    
+	return e;
+      }
+      break;
     default:
       return NULL_OBJECT;
     }

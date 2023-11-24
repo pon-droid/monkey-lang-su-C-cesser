@@ -30,7 +30,7 @@ main (void)
       printf("\ninput>: ");
       char *input = read_input(stdin);
       struct stmt_list *program = parse_program(input);
-      struct object *o = eval_stmt_list(program);
+      struct object *o = eval_stmt_list(program, NULL);
       if (o)
 	{
 	  char *eval = obj_str(o);

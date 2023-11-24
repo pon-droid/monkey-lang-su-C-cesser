@@ -551,7 +551,7 @@ get_let_stmt (struct parser *p)
   if (p->peek_tok->type == SEMICOLON)
     {
       cycle_token(p);
-      cycle_token(p);
+      //      cycle_token(p);
     }
 
   return s;
@@ -653,8 +653,11 @@ parse_program (const char *input)
   while (p.cur_tok->type != END_FILE)
     {
       struct stmt *s = get_stmt(&p);
-      if (s)
-	append_stmt_list(program, s);
+      if (s) {
+	append_stmt_list(program, s); printf("progtype:%d\n", s->type);
+	if( s->type == EXPR_STMT)
+	  printf("progtyep2:%d\n", s->expr->type);
+      }
       cycle_token(&p);
     }
   getfree_errors(&p.elist, 0);
