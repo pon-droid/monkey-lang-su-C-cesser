@@ -547,20 +547,10 @@ get_let_stmt (struct parser *p)
   cycle_token(p);
 
   s->expr = parse_expr(p, LOWEST);
-  /*
-  printf("Current token: %s\n", toktype_str[p->cur_tok->type]);
-  if (p->peek_tok->type == SEMICOLON)
-    {
-      cycle_token(p);
-      //      cycle_token(p);
-    }
-  printf("Current token: %s\n", toktype_str[p->cur_tok->type]);
-  */
-  while (p->peek_tok->type == SEMICOLON) {
-    //printf("peek_tok: %s cur_tok: %s \n", p->peek_tok->literal, p->cur_tok->literal);
+
+  while (p->peek_tok->type == SEMICOLON)
     cycle_token(p);
-  }
-  //printf("peek_tok: %s cur_tok: %s \n", p->peek_tok->literal, p->cur_tok->literal);
+
   return s;
 }
 
@@ -581,10 +571,7 @@ get_ret_stmt (struct parser *p)
   s->expr = parse_expr(p, LOWEST);
   
   if (p->peek_tok->type == SEMICOLON)
-    {
-      cycle_token(p);
-      cycle_token(p);
-    }
+    cycle_token(p);
   
   return s;
 }

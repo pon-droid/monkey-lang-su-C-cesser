@@ -304,11 +304,11 @@ test_bindings (void)
 
   struct str_int_cmp tests [] =
     {
-      //{"let a = 5; a;", 5},
-      // {"let a = 5 * 5; a;", 25},
-      //      {"let a = 5; let a = 5;", 5},
+      {"let a = 5; a;", 5},
+      {"let a = 5 * 5; a;", 25},
+      {"let a = 5; let a = 5;", 5},
       {"let a = 5; let b = a; b;", 5},
-      // {"let a = 5; let b = a; let c = a + b + 5; c;", 15},
+      {"let a = 5; let b = a; let c = a + b + 5; c;", 15},
     };
   
 
@@ -316,17 +316,14 @@ test_bindings (void)
     {
       struct enviro *env = get_enviro();  
       struct stmt_list *program = parse_program(tests[i].input);
-      printf("work\n");
+
       struct object *o = eval_stmt_list(program, env);
-      printf("%s\n", obj_str(o));
       assert(o->type == INT_OBJ);
       assert(o->integer == tests[i].output);
 
       free_enviro(env);
       free_obj(o);
       free_stmt_list(program);
-      printf("index: %d\n", i);
-
     }
 
 
@@ -347,7 +344,6 @@ test_parser_q (void)
 
   struct enviro *env = get_enviro();
   struct object *o = eval_stmt_list(program, env);
-  //  printf("%s\n", obj_str(o));
   assert(o->type == INT_OBJ);
   assert(o->integer == 5);
   
@@ -360,7 +356,7 @@ test_parser_q (void)
 
 int
 main (void)
-{/*
+{
   test_int();
   test_bool();
   test_prefix();
@@ -369,8 +365,7 @@ main (void)
   test_return();
   test_return_if();
   test_err();
- */
-  //  test_bindings();
+  test_bindings();
   test_parser_q();
   return 0;
 }

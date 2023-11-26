@@ -11,7 +11,7 @@ test_let (void)
     "let y = 10;"
     "let foobar = 838383;"
     ;
-     
+
   struct lexer l = get_lexer(input);
   struct parser p = get_parser(&l);
   
@@ -30,6 +30,7 @@ test_let (void)
       assert(s->token.type == LET);
       assert(strcmp(s->ident.literal, tests[i]) == 0);
       free_stmt(s);
+      cycle_token(&p);
     }
   getfree_errors(&p.elist, 0);
   free_parser(&p);
@@ -53,6 +54,7 @@ test_return (void)
       assert(s->type == RET_STMT);
       assert(s->token.type == RETURN);
       free_stmt(s);
+      cycle_token(&p);
     }
   getfree_errors(&p.elist, 0);
   free_parser(&p);
@@ -331,23 +333,25 @@ test_let_real (void)
   assert(s->type == LET_STMT);
   assert(s->expr->integer == 5);
   assert(strcmp(s->ident.literal, "x") == 0);
-  
+  cycle_token(&p);  
   free_stmt(s);
+  
   s = get_stmt(&p);
   getfree_errors(&p.elist, 0);
   
   assert(s->type == LET_STMT);
   assert(s->expr->bool == 1);
   assert(strcmp(s->ident.literal, "y") == 0);
-  
+  cycle_token(&p);
   free_stmt(s);
+
   s = get_stmt(&p);
   getfree_errors(&p.elist, 0);
 
   assert(s->type == LET_STMT);
   assert(strcmp(s->expr->ident, "y") == 0);
   assert(strcmp(s->ident.literal, "foobar") == 0);
-  
+
   free_stmt(s);
   free_parser(&p);
 }
@@ -369,15 +373,17 @@ test_ret_real (void)
   assert(s);
   assert(s->type == RET_STMT);
   assert(s->expr->integer == 5);
-  
+  cycle_token(&p);  
   free_stmt(s);
+  
   s = get_stmt(&p);
   getfree_errors(&p.elist, 0);
   
   assert(s->type == RET_STMT);
   assert(s->expr->bool == 1);
-  
+  cycle_token(&p);
   free_stmt(s);
+  
   s = get_stmt(&p);
   getfree_errors(&p.elist, 0);
 

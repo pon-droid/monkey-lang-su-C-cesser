@@ -22,6 +22,7 @@ get_shmap (uint shmap_size)
   s->shlist = get_list(sizeof(struct object *));
   shrink_to_size(s->shlist, shmap_size);
   memset(s->shlist->list, 0, s->shlist->typesize * shmap_size);
+  s->shlist->count = shmap_size;
   return s;
 }
 

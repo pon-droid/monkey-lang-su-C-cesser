@@ -330,7 +330,7 @@ eval_expr (const struct expr *node, struct enviro *env)
       {
 	if (!shmap_k(env, node->ident))
 	  return get_err_obj("identifier not found: %s", node->ident);
-	printf("ALLOC\n");
+
 	struct object *val = malloc(sizeof(struct object));
 
 	memcpy(val, shmap_k(env, node->ident), sizeof(struct object));
@@ -359,11 +359,13 @@ eval (const struct stmt *node, struct enviro *env)
 	if (e->type == ERR_OBJ)
 	  return e;
 
-	shmap_k(env, node->ident.literal) = e;
-
-	struct object *e_cpy = malloc(sizeof(struct object));
-	memcpy(e_cpy, e, sizeof(struct object));
-	return e_cpy;
+	//Overwrite previous variable if variable is redefined
+	if (!shmap_k(env, node->ident.literal))
+	  shmap_k(env, node->ident.literal) = malloc(sizeof(struct object));
+	
+	memcpy(shmap_k(env, node->ident.literal), e, sizeof(struct object));
+	
+	return e;
       }
     default:
       return NULL_OBJECT;

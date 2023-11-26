@@ -42,7 +42,10 @@ void
 free_list (struct list *l, void (*free_obj)(void *))
 {
   for (int i = 0; i < l->count; i++)
-    free_obj(l->list[i]);
+    {
+      if (l->list[i])
+	free_obj(l->list[i]);
+    }
   free(l->list);
   free(l);
 }
