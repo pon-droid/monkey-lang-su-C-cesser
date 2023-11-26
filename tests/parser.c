@@ -391,7 +391,7 @@ test_ret_real (void)
 int
 main (void)
 {
-  //  test_let();
+  test_let();
   test_return();
   test_ident();
   test_int();
@@ -407,7 +407,7 @@ main (void)
   test_fn_literal2();
   test_fn_literal3();
   test_call_expr();
-  //test_let_real();
+  test_let_real();
   test_ret_real();
   return 0;
 }

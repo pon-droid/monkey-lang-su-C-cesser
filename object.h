@@ -248,11 +248,11 @@ eval_stmt_list (const struct stmt_list *stmt_list, struct enviro *env)
   struct object *obj = NULL;
   for (int i = 0; i < stmt_list->count; i++)
     {
-      printf("typed: %d\n", stmt_list->list[i]->expr->type);
       if (obj)
 	free_obj(obj);
+
       obj = eval(stmt_list->list[i], env);
-      printf("%s\n", obj_type_str[obj->type]);
+
       if (obj->type == RET_OBJ)
 	{
 	  struct object *val = obj->return_val;
@@ -328,11 +328,12 @@ eval_expr (const struct expr *node, struct enviro *env)
     case IF_EXPR: return eval_if_expr(node, env); break;
     case IDENT_EXPR:
       {
-	printf("ident_expr\n");
-	printf("ident expr %s\n", node->ident);
-	struct object *val = shmap_k(env, node->ident);
-	if (!val)
+	if (!shmap_k(env, node->ident))
 	  return get_err_obj("identifier not found: %s", node->ident);
+	printf("ALLOC\n");
+	struct object *val = malloc(sizeof(struct object));
+
+	memcpy(val, shmap_k(env, node->ident), sizeof(struct object));
 
 	return val;
       }
@@ -354,15 +355,16 @@ eval (const struct stmt *node, struct enviro *env)
     case LET_STMT:
       {
 	struct object *e = eval_expr(node->expr, env);
-	
+
 	if (e->type == ERR_OBJ)
 	  return e;
-	printf("%s\n", node->ident.literal);
+
 	shmap_k(env, node->ident.literal) = e;
-	printf("work\n");	    
-	return e;
+
+	struct object *e_cpy = malloc(sizeof(struct object));
+	memcpy(e_cpy, e, sizeof(struct object));
+	return e_cpy;
       }
-      break;
     default:
       return NULL_OBJECT;
     }

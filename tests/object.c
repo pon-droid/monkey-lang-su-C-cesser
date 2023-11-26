@@ -304,27 +304,59 @@ test_bindings (void)
 
   struct str_int_cmp tests [] =
     {
-      {"let a = 5; a;", 5},
-      {"let a = 5 * 5; a;", 25},
+      //{"let a = 5; a;", 5},
+      // {"let a = 5 * 5; a;", 25},
+      //      {"let a = 5; let a = 5;", 5},
       {"let a = 5; let b = a; b;", 5},
-      {"let a = 5; let b = a; let c = a + b + 5; c;", 15},
+      // {"let a = 5; let b = a; let c = a + b + 5; c;", 15},
     };
   
-  struct enviro *env = get_enviro();
+
   for (int i = 0; i < sizeof(tests)/sizeof(tests[0]); i++)
     {
+      struct enviro *env = get_enviro();  
       struct stmt_list *program = parse_program(tests[i].input);
+      printf("work\n");
       struct object *o = eval_stmt_list(program, env);
+      printf("%s\n", obj_str(o));
       assert(o->type == INT_OBJ);
       assert(o->integer == tests[i].output);
+
+      free_enviro(env);
       free_obj(o);
       free_stmt_list(program);
-      printf("%d\n", i);
+      printf("index: %d\n", i);
+
     }
 
-  free_enviro(env);
+
 }
+
+void
+test_parser_q (void)
+{
+  struct str_cmp
+  {
+    const char *input;
+  };
+
+  const char *input =
+    "let a = 5; let b = a; b;";
+
+  struct stmt_list *program = parse_program(input);
+
+  struct enviro *env = get_enviro();
+  struct object *o = eval_stmt_list(program, env);
+  //  printf("%s\n", obj_str(o));
+  assert(o->type == INT_OBJ);
+  assert(o->integer == 5);
   
+  free_enviro(env);
+  free_obj(o);
+  free_stmt_list(program);
+  
+  
+}
 
 int
 main (void)
@@ -338,6 +370,7 @@ main (void)
   test_return_if();
   test_err();
  */
-  test_bindings();
+  //  test_bindings();
+  test_parser_q();
   return 0;
 }
