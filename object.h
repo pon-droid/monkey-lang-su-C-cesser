@@ -10,6 +10,7 @@ enum obj_type
   NULL_OBJ,
   RET_OBJ,
   ERR_OBJ,
+  FN_OBJ,
 };
 
 char const *obj_type_str[] =
@@ -19,6 +20,7 @@ char const *obj_type_str[] =
   "NULL",
   "RETURN",
   "ERROR",
+  "FUNCTION",
 };
 
 struct object
@@ -30,6 +32,12 @@ struct object
     int bool;
     struct object *return_val;
     char* err;
+    struct // function object
+    {
+      struct list *params;
+      struct stmt_list *body;
+      struct enviro *env;
+    };
   };
 };
 
@@ -336,6 +344,18 @@ eval_expr (const struct expr *node, struct enviro *env)
 	memcpy(val, shmap_k(env, node->ident), sizeof(struct object));
 
 	return val;
+      }
+      break;
+    case FN_EXPR:
+      {
+	struct object *fn = malloc(sizeof(struct object));
+	
+	fn->type = FN_OBJ;
+	fn->params = node->params;
+	fn->body = node->body;
+	
+	fn->env = env;
+	return fn;
       }
       break;
     default:

@@ -50,7 +50,7 @@ struct expr
   {
     int integer;
     char *ident;
-    struct expr *expr[2];
+    struct expr *expr[2]; //prefix
     int bool;
     struct //if statement stuff
     {

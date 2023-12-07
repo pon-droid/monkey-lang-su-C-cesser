@@ -1,5 +1,6 @@
 #include "../object.h"
-#include <assert.h>
+#include "test_util.h"
+
 
 struct test
 {
@@ -354,6 +355,28 @@ test_parser_q (void)
   
 }
 
+void
+test_fn (void)
+{
+  const char *input =
+    "fn(x) { x + 2; };";
+
+  struct enviro *env = get_enviro();
+  struct stmt_list *program = parse_program(input);
+  struct object *o = eval_stmt_list(program, env);
+
+  assert(o);
+  assert(o->type == FN_OBJ);
+  assert(strcmp(((struct expr *)o->params->list[0])->ident, "x") == 0);
+  assert(o->body->list[0]->type == EXPR_STMT);
+  assert(o->body->list[0]->expr->type == INFIX_EXPR);
+  expr_str(o->body->list[0]->expr, "(x + 2)");
+
+  free_enviro(env);
+  free_obj(o);
+  free_stmt_list(program);
+}
+
 int
 main (void)
 {
@@ -367,5 +390,6 @@ main (void)
   test_err();
   test_bindings();
   test_parser_q();
+  test_fn();
   return 0;
 }

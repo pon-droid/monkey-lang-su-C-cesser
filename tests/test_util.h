@@ -115,3 +115,15 @@ test_prec (const char *input, const char *output)
   free_debug_buf(b);
   return success;
 }
+
+int
+expr_str (const struct expr *e, const char *expect)
+{
+  struct debug_buffer *b = get_buffer();
+  expr_string(b, e);
+  buffer_string(b);
+
+  assert(strcmp(b->str, expect) == 0);
+  free_debug_buf(b);
+  return 1;
+}

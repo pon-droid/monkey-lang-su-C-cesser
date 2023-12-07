@@ -25,12 +25,13 @@ read_input (FILE *stream)
 int
 main (void)
 {
+  struct enviro *env = get_enviro();
   while (1)
     {  
       printf("\ninput>: ");
       char *input = read_input(stdin);
       struct stmt_list *program = parse_program(input);
-      struct object *o = eval_stmt_list(program, NULL);
+      struct object *o = eval_stmt_list(program, env);
       if (o)
 	{
 	  char *eval = obj_str(o);
@@ -39,7 +40,9 @@ main (void)
 	  free_obj(o);
 	}
       free_stmt_list(program);
+
       free(input);
     }
+  free_enviro(env);
   return 0;
 }
