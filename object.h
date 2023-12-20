@@ -336,12 +336,12 @@ eval_expr (const struct expr *node, struct enviro *env)
     case IF_EXPR: return eval_if_expr(node, env); break;
     case IDENT_EXPR:
       {
-	if (!shmap_k(env, node->ident))
+	if (!get_env(env, node->ident))
 	  return get_err_obj("identifier not found: %s", node->ident);
 
 	struct object *val = malloc(sizeof(struct object));
 
-	memcpy(val, shmap_k(env, node->ident), sizeof(struct object));
+	memcpy(val, get_env(env, node->ident), sizeof(struct object));
 
 	return val;
       }
@@ -356,6 +356,32 @@ eval_expr (const struct expr *node, struct enviro *env)
 	
 	fn->env = env;
 	return fn;
+      }
+      break;
+    case CALL_EXPR:
+      {
+	struct object *fn = eval_expr(node->fn, env);
+	
+	if (fn->type == ERR_OBJ)
+	  return fn;
+
+	struct list *args = get_list(sizeof(struct object));
+
+	for (int i = 0; i < node->args->count; i++)
+	  {
+	    struct object *arg = eval_expr(node->args->list[i], env); //test eval
+	    if (arg->type == ERR_OBJ)
+	      {
+		struct object *arg_err = NULL;
+		memcpy(arg_err, arg, sizeof(struct object));
+		free_list(args, free_obj);
+
+		return arg_err;
+	      }
+	    append_list(args, arg);
+	  }
+	
+	
       }
       break;
     default:
@@ -379,11 +405,12 @@ eval (const struct stmt *node, struct enviro *env)
 	if (e->type == ERR_OBJ)
 	  return e;
 
-	//Overwrite previous variable if variable is redefined
-	if (!shmap_k(env, node->ident.literal))
-	  shmap_k(env, node->ident.literal) = malloc(sizeof(struct object));
+
+	if (!get_env(env, node->ident.literal))
+	  set_env(env, node->ident.literal, malloc(sizeof(struct object)));
 	
-	memcpy(shmap_k(env, node->ident.literal), e, sizeof(struct object));
+	//Overwrite previous variable if variable is redefined
+        memcpy(get_env(env, node->ident.literal), e, sizeof(struct object));
 	
 	return e;
       }

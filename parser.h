@@ -62,7 +62,7 @@ struct expr
       struct list *params;
       struct stmt_list *body;
     };
-    struct
+    struct //call fn
     {
       struct expr *fn; //function or identifier
       struct list *args;

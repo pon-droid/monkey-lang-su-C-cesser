@@ -297,13 +297,7 @@ test_err (void)
 void
 test_bindings (void)
 {
-  struct str_int_cmp
-  {
-    const char *input;
-    int output;
-  };
-
-  struct str_int_cmp tests [] =
+  struct test tests [] =
     {
       {"let a = 5; a;", 5},
       {"let a = 5 * 5; a;", 25},
@@ -333,10 +327,6 @@ test_bindings (void)
 void
 test_parser_q (void)
 {
-  struct str_cmp
-  {
-    const char *input;
-  };
 
   const char *input =
     "let a = 5; let b = a; b;";
@@ -377,6 +367,35 @@ test_fn (void)
   free_stmt_list(program);
 }
 
+void
+test_fn_eval (void)
+{
+  struct test tests [] =
+    {
+      {"let identity = fn(x) { x; }; identity(5);", 5},
+      {"let identity = fn(x) { return x; }; identity(5);", 5},
+      {"let double = fn(x) { x * 2; }; double(5);", 10},
+      {"let add = fn(x, y) { x + y; }; add(5, 5);", 10},
+      {"let add = fn(x, y) { x + y; }; add(5 + 5, add(5, 5));", 20},
+      {"fn(x) { x; }(5)", 5},
+    };
+  
+  for (int i = 0; i < sizeof(tests)/sizeof(tests[0]); i++)
+    {
+      struct enviro *env = get_enviro();  
+      struct stmt_list *program = parse_program(tests[i].input);
+
+      struct object *o = eval_stmt_list(program, env);
+      assert(o);
+      assert(o->type == INT_OBJ);
+      assert(o->integer == tests[i].output);
+
+      free_enviro(env);
+      free_obj(o);
+      free_stmt_list(program);
+    }
+  
+}
 int
 main (void)
 {
@@ -391,5 +410,6 @@ main (void)
   test_bindings();
   test_parser_q();
   test_fn();
+  test_fn_eval();
   return 0;
 }

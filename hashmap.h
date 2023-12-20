@@ -28,7 +28,7 @@ get_shmap (uint shmap_size)
 
 // Shamelessly taken from Algorithims Third Edition.
 static int
-hash (char *c, uint size)
+hash (const char *c, uint size)
 {
   int h = 0;
   for (; *c != '\0'; c++)
