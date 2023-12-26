@@ -27,14 +27,28 @@ free_enviro (struct enviro *e)
   free(e);
 }
 
+struct enviro *
+get_encap_enviro (struct enviro * outer)
+{
+  struct enviro *e = get_enviro();
+  e->outer = outer;
+  return e;
+}
+
 void *
 get_env (struct enviro *e, const char *ident)
 {
   int index = hash(ident, ENVIRO_SIZE);
+  /*
   if (!e->outer)
     return e->store->shlist->list[index];
   else
     return e->outer;
+  */
+  if (!e->store->shlist->list[index] && e->outer)
+    return get_env(e->outer, ident);
+
+  return e->store->shlist->list[index];
 }
 
 void

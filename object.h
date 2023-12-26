@@ -305,6 +305,35 @@ eval_if_expr (const struct expr *node, struct enviro *env)
   return NULL_OBJECT;
 }
 
+struct enviro *
+extend_fn_env (struct object *fn, struct list *args)
+{
+  struct enviro *env = get_encap_enviro(fn->env);
+
+  assert(fn->params->count == args->count);
+
+  for (int i = 0; i < fn->params->count; i++)
+    set_env(env, ((struct expr *)(fn->params->list[i]))->ident, args->list[i]);
+
+  return env;
+}
+
+struct object *
+apply_fn (struct object *fn, struct list *args)
+{
+  if (fn->type != FN_OBJ)
+    return get_err_obj("not a function: %s", obj_type_str[fn->type]);
+
+  struct enviro *ext_env = extend_fn_env(fn, args);
+  struct object *evaluated = eval_stmt_list(fn->body, ext_env);
+
+  if (evaluated->type == RET_OBJ)
+    return evaluated->return_val;
+
+  return evaluated;
+}
+
+
 struct object *
 eval_expr (const struct expr *node, struct enviro *env)
 {
@@ -381,7 +410,7 @@ eval_expr (const struct expr *node, struct enviro *env)
 	    append_list(args, arg);
 	  }
 	
-	
+	return apply_fn(fn, args);
       }
       break;
     default:
