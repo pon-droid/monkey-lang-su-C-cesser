@@ -327,6 +327,13 @@ apply_fn (struct object *fn, struct list *args)
   struct enviro *ext_env = extend_fn_env(fn, args);
   struct object *evaluated = eval_stmt_list(fn->body, ext_env);
 
+  free_list(args, free_obj);
+  free(fn);
+  free(ext_env->store->shlist->list);
+  free(ext_env->store->shlist);
+  free(ext_env->store);
+  free(ext_env);
+  
   if (evaluated->type == RET_OBJ)
     return evaluated->return_val;
 
